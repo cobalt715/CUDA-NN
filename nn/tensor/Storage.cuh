@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cuda_runtime.h>
 #include <string>
 #include <cstring>
 #include <cstdint>
@@ -9,14 +8,6 @@
 #include "nn/Backend.hpp"
 
 namespace cobalt_715::nn::tensor{
-
-static __global__ void fill_kernel(float *__restrict__ a,const int64_t n,const float f){
-  const int64_t x = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if(x >= n) return;
-
-  a[x] = f;
-}
 
 struct Storage{
 private:
@@ -52,6 +43,12 @@ public:
     }
   }
 
+  template<typename... Ts>
+  requires (std::same_as<Ts, Storage> && ...)
+  inline static bool same_size(const Storage& first, const Ts&... rest){
+    return ((rest.size() == first.size()) && ...);
+  }
+
   __host__ __device__ float* data(){
     return data_;
   }
@@ -74,19 +71,6 @@ public:
 
   Backend backend() const{
     return backend_;
-  }
-
-  void fill(const float f){
-    if(backend_ == Backend::CPU){
-      std::fill(data_,data_ + size_,f);
-    }else if(backend_ == Backend::CUDA){
-      fill_kernel<<<(size_ + 255) / 256,256>>>(data_,size_,f);
-
-      cudaError_t err = cudaGetLastError();
-      if(err != cudaSuccess){
-        throw std::runtime_error(cudaGetErrorString(err));
-      }
-    }
   }
 
   Storage toCPU() const{
@@ -134,6 +118,10 @@ public:
 
     return s;
   }
+
+  void fill(const float f);
+
+  static void add(const Storage &a,const Storage &b,Storage &out);
 };
 
 inline std::ostream& operator<<(std::ostream &o,const Storage &s){
