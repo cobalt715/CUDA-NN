@@ -39,4 +39,43 @@ void Storage::add(const Storage &a,const Storage &b,Storage &out){
   }
 }
 
+void Storage::sub(const Storage &a,const Storage &b,Storage &out){
+  #ifndef NDEBUG
+    if(!same_backend(a,b,out)) throw std::runtime_error("Storage::sub Backend mismatch");
+    if(!Storage::same_size(a,b,out)) throw std::runtime_error("Storage::sub size mismatch");
+  #endif
+
+  if(a.backend() == Backend::CPU){
+    ops::vec::sub<Backend::CPU>(a.data(),b.data(),out.data(),a.size());
+  }else if(a.backend() == Backend::CUDA){
+    ops::vec::sub<Backend::CUDA>(a.data(),b.data(),out.data(),a.size());
+  }
+}
+
+void Storage::mul(const Storage &a,const Storage &b,Storage &out){
+  #ifndef NDEBUG
+    if(!same_backend(a,b,out)) throw std::runtime_error("Storage::mul Backend mismatch");
+    if(!Storage::same_size(a,b,out)) throw std::runtime_error("Storage::mul size mismatch");
+  #endif
+
+  if(a.backend() == Backend::CPU){
+    ops::vec::mul<Backend::CPU>(a.data(),b.data(),out.data(),a.size());
+  }else if(a.backend() == Backend::CUDA){
+    ops::vec::mul<Backend::CUDA>(a.data(),b.data(),out.data(),a.size());
+  }
+}
+
+void Storage::div(const Storage &a,const Storage &b,Storage &out){
+  #ifndef NDEBUG
+    if(!same_backend(a,b,out)) throw std::runtime_error("Storage::div Backend mismatch");
+    if(!Storage::same_size(a,b,out)) throw std::runtime_error("Storage::div size mismatch");
+  #endif
+
+  if(a.backend() == Backend::CPU){
+    ops::vec::div<Backend::CPU>(a.data(),b.data(),out.data(),a.size());
+  }else if(a.backend() == Backend::CUDA){
+    ops::vec::div<Backend::CUDA>(a.data(),b.data(),out.data(),a.size());
+  }
+}
+
 }//namespace cobalt_715::nn::tensor

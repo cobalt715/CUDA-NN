@@ -10,12 +10,10 @@
 namespace cobalt_715::nn::tensor{
 
 struct Storage{
-private:
   float *data_;
   int64_t size_;
   Backend backend_;
 
-public:
   Storage(const int64_t size,const Backend backend)
     : size_(size),
       backend_(backend){
@@ -33,6 +31,39 @@ public:
         throw std::runtime_error(std::string("tensor::Storage::constructor") + cudaGetErrorString(err));
       }
     }
+  }
+
+  Storage(const Storage&) = delete;
+  Storage& operator=(const Storage&) = delete;
+
+  Storage(Storage &&s) noexcept
+    : data_(s.data()),
+      size_(s.size()),
+      backend_(s.backend()){
+
+      s.data_ = nullptr;
+      s.size_ = 0;
+  }
+
+  Storage& operator=(Storage &&s){
+    if(backend_ == Backend::CPU){
+      data_ = new float[size_];
+    }else if(backend_ == Backend::CUDA){
+      const cudaError_t err = cudaMalloc((void**)&data_,size_ * sizeof(float));
+
+      if(err != cudaSuccess){
+        throw std::runtime_error(std::string("tensor::Storage::constructor") + cudaGetErrorString(err));
+      }
+    }
+
+    data_ = s.data();
+    size_ = s.size();
+    backend_ = s.backend();
+
+    s.data_ = nullptr;
+    s.size_ = 0;
+
+    return *this;
   }
 
   ~Storage(){
@@ -122,6 +153,9 @@ public:
   void fill(const float f);
 
   static void add(const Storage &a,const Storage &b,Storage &out);
+  static void sub(const Storage &a,const Storage &b,Storage &out);
+  static void mul(const Storage &a,const Storage &b,Storage &out);
+  static void div(const Storage &a,const Storage &b,Storage &out);
 };
 
 inline std::ostream& operator<<(std::ostream &o,const Storage &s){
