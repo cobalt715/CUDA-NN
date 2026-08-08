@@ -19,5 +19,13 @@ int main(){
 
   std::cout << m << std::endl;
 
+  std::cout << m.toCUDA().t() << std::endl;
+
+  m = m.toCUDA();
+
+  tensor::Matrix::add(m,m,m);
+
+  std::cout << m << std::endl;
+
   return 0;
 }
