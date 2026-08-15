@@ -13,19 +13,21 @@ int main(){
     a.at(i) = i;
   }
 
-  std::cout << a << std::endl;
+  tensor::Storage b(16,Backend::CPU);
 
-  tensor::Matrix m(3,4,std::move(a));
+  for(int i = 0;i < b.size();i++){
+    b.at(i) = i / 10.0f;
+  }
 
-  std::cout << m << std::endl;
+  tensor::Matrix m1(3,4,std::move(a.toCUDA()));
+  tensor::Matrix m2(4,4,std::move(b.toCUDA()));
+  tensor::Matrix m3(3,4,Backend::CUDA);
 
-  std::cout << m.toCUDA().t() << std::endl;
+  std::cout << m1 << "\n" << m2 << "\n" << m3 << std::endl;
 
-  m = m.toCUDA();
+  tensor::Matrix::matmul(m1,m2,m3);
 
-  tensor::Matrix::add(m,m,m);
-
-  std::cout << m << std::endl;
+  std::cout << m3 << std::endl;
 
   return 0;
 }

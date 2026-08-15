@@ -60,6 +60,61 @@ __global__ void cuda_matrix_binary_alias_safe(const int64_t rows,
   out[out_bool ? y * out_stride + x:x * out_stride + y] = t(a[a_bool ? y * a_stride + x:x * a_stride + y],b[b_bool ? y * b_stride + x:x * b_stride + y]);
 }
 
+//OUT = AB
+//16*16*K
+__global__ void gemm(const float *a,
+                     const int64_t a_row_stride,
+                     const int64_t a_col_stride,
+                     const float *b,
+                     const int64_t b_row_stride,
+                     const int64_t b_col_stride,
+                     float *out,
+                     const int64_t out_row_stride,
+                     const int64_t out_col_stride,
+                     const int64_t I,
+                     const int64_t J,
+                     const int64_t K){
+
+  const int64_t row = blockIdx.y * blockDim.y + threadIdx.y;
+  const int64_t col = blockIdx.x * blockDim.x + threadIdx.x;
+
+  const int64_t tx = threadIdx.x;
+  const int64_t ty = threadIdx.y;
+
+  __shared__ float a_pack[16][16];
+  __shared__ float bt_pack[16][16];
+
+  float sum = 0.0f;
+
+  for(int64_t kk = 0;kk < K;kk += 16){
+    if(row < I && kk + tx < K){
+      a_pack[ty][tx] =
+        a[row * a_row_stride + (kk + tx) * a_col_stride];
+    }else{
+      a_pack[ty][tx] = 0.0f;
+    }
+
+    if(col < J && kk + ty < K){
+      bt_pack[tx][ty] =
+        b[(kk + ty) * b_row_stride + col * b_col_stride];
+    }else{
+      bt_pack[tx][ty] = 0.0f;
+    }
+
+    __syncthreads();
+
+    for(int64_t k = 0;k < 16;k++){
+      sum += a_pack[ty][k] * bt_pack[tx][k];
+    }
+    __syncthreads();
+  }
+
+  if(row < I && col < J){
+    out[row * out_row_stride + col * out_col_stride] = sum;
+  }
+
+}
+
 struct Matrix{
   Storage data_;
   bool row_con_;
@@ -137,15 +192,36 @@ struct Matrix{
       }
     }else if(a.backend() == Backend::CUDA){
       cuda_matrix_binary_alias_safe<op::add><<<dim3((a.cols() + 15) / 16,(a.rows() + 15) / 16),dim3(16,16)>>>(a.rows(),a.cols(),
-                                                                                                                            a.data().data(),a.stride(),a.row_con(),
-                                                                                                                            b.data().data(),b.stride(),b.row_con(),
-                                                                                                                            out.data().data(),out.stride(),out.row_con());
+                                                                                                              a.data().data(),a.stride(),a.row_con(),
+                                                                                                              b.data().data(),b.stride(),b.row_con(),
+                                                                                                              out.data().data(),out.stride(),out.row_con());
 
       cudaError_t err = cudaGetLastError();
       if(err != cudaSuccess){
         throw std::runtime_error(cudaGetErrorString(err));
       }
     }
+  }
+
+  static void matmul(const Matrix &a,const Matrix &b,Matrix &out){
+    if(!nn::same_backend(a,b,out)) throw std::runtime_error("Matrix::matmul Backend mismatch");
+
+    if(a.backend() != Backend::CUDA) throw std::runtime_error("qawsedrftgyhujikolp");
+
+    if(out.rows() != a.rows() && out.cols() != b.cols() && a.cols() != b.rows()) throw std::runtime_error("123456789;");
+
+    gemm<<<dim3((out.cols() + 15) / 16,(out.rows() + 15) / 16),dim3(16,16)>>>(a.data().data(),
+                                                                              (a.row_con()) ? a.stride():1,
+                                                                              (a.row_con()) ? 1:a.stride(),
+                                                                              b.data().data(),
+                                                                              (b.row_con()) ? b.stride():1,
+                                                                              (b.row_con()) ? 1:b.stride(),
+                                                                              out.data().data(),
+                                                                              (out.row_con()) ? out.stride():1,
+                                                                              (out.row_con()) ? 1:out.stride(),
+                                                                              out.rows(),
+                                                                              out.cols(),
+                                                                              a.cols());
   }
 
   Matrix& t(){
