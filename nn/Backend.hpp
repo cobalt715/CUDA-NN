@@ -5,18 +5,21 @@
 
 namespace cobalt_715::nn{
 
+//どこで動かすか
 enum class Backend{
   CPU,
   CUDA
 };
 
+//この関数を持っているか
 template<typename T>
 concept BackendObject =
-requires(const T& x){
+requires(const T &x){
   { x.backend() } -> std::same_as<Backend>;
 };
 
-constexpr const std::string_view to_string(Backend backend) noexcept{
+//文字列にする
+constexpr const std::string to_string(Backend backend) noexcept{
   switch(backend){
     case Backend::CPU:
       return "CPU";
