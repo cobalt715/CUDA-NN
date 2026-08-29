@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <ostream>
 #include <algorithm>
-#include <cuda_runtime.h>
 #include "nn/Backend.hpp"
-#include "nn/CUDAUtil.cuh"
+#include "nn/cuda/config.cuh"
+#include "nn/cuda/util.cuh"
 
 namespace cobalt_715::nn::tensor{
 
@@ -18,11 +18,13 @@ private:
   int64_t size_;
   Backend backend_;
 
-  void release(){
+  inline void release(){
     if(backend_ == Backend::CPU){
       delete[] data_;
     }else if(backend_ == Backend::CUDA){
-      cudaFree(data_);
+      #ifdef COBALT_715_USE_CUDA
+        cudaFree(data_);
+      #endif
     }
 
     data_ = nullptr;
@@ -30,7 +32,7 @@ private:
   }
 
 public:
-  Storage(const int64_t size,const Backend backend)
+  Storage(const int64_t size,const Backend backend = Backend::CPU)
     : size_(size),
       backend_(backend){
 
@@ -41,9 +43,13 @@ public:
     if(backend_ == Backend::CPU){
       data_ = new float[size_];
     }else if(backend_ == Backend::CUDA){
-      const cudaError_t err = cudaMalloc(reinterpret_cast<void**>(&data_),size_ * sizeof(float));
+      #ifdef COBALT_715_USE_CUDA
+        const cudaError_t err = cudaMalloc(reinterpret_cast<void**>(&data_),size_ * sizeof(float));
 
-      nn::check_cuda(err);
+        cuda::check_cuda(err);
+      #else
+        throw std::runtime_error("CUDA is not enabled");
+      #endif
     }
   }
 
@@ -80,31 +86,39 @@ public:
     return *this;
   }
 
-  __host__ __device__ float* data() noexcept{
+  inline float* data() noexcept{
     return data_;
   }
 
-  __host__ __device__ const float* data() const noexcept{
+  inline const float* data() const noexcept{
     return data_;
   }
 
-  __host__ __device__ float& at(const int64_t i) noexcept{
+  inline float& at(const int64_t i){
+    #ifndef NDEBUG
+      if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::at");
+    #endif
+
     return data_[i];
   }
 
-  __host__ __device__ const float& at(const int64_t i) const noexcept{
+  inline const float& at(const int64_t i) const{
+    #ifndef NDEBUG
+      if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::at");
+    #endif
+
     return data_[i];
   }
 
-  __host__ __device__ int64_t size() const noexcept{
+  inline int64_t size() const noexcept{
     return size_;
   }
 
-  Backend backend() const noexcept{
+  inline Backend backend() const noexcept{
     return backend_;
   }
 
-  bool empty() const noexcept{
+  inline bool empty() const noexcept{
     return size_ == 0;
   }
 
@@ -126,9 +140,13 @@ public:
     if(backend_ == Backend::CPU){
       std::memcpy(s.data(),data_,size_ * sizeof(float));
     }else if(backend_ == Backend::CUDA){
-      const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyDeviceToHost);
+      #ifdef COBALT_715_USE_CUDA
+        const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyDeviceToHost);
 
-      nn::check_cuda(err);
+        cuda::check_cuda(err);
+      #else
+        throw std::runtime_error("CUDA is not enabled");
+      #endif
     }
 
     return s;
@@ -136,19 +154,23 @@ public:
 
   //to cuda
   Storage toCUDA() const{
-    Storage s(size_,Backend::CUDA);
+    #ifdef COBALT_715_USE_CUDA
+      Storage s(size_,Backend::CUDA);
 
-    if(backend_ == Backend::CPU){
-      const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyHostToDevice);
+      if(backend_ == Backend::CPU){
+        const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyHostToDevice);
 
-      nn::check_cuda(err);
-    }else if(backend_ == Backend::CUDA){
-      const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyDeviceToDevice);
+        cuda::check_cuda(err);
+      }else if(backend_ == Backend::CUDA){
+        const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyDeviceToDevice);
 
-      nn::check_cuda(err);
-    }
+        cuda::check_cuda(err);
+      }
 
-    return s;
+      return s;
+    #else
+      throw std::runtime_error("CUDA is not enabled");
+    #endif
   }
 
   //to string
@@ -170,13 +192,17 @@ public:
     if(backend_ == Backend::CPU){
       data = data_;
     }else if(backend_ == Backend::CUDA){
-      data = new float[count];
+      #ifdef COBALT_715_USE_CUDA
+        data = new float[count];
 
-      const cudaError_t err = cudaMemcpy(data,data_,count * sizeof(float),cudaMemcpyDeviceToHost);
+        const cudaError_t err = cudaMemcpy(data,data_,count * sizeof(float),cudaMemcpyDeviceToHost);
 
-      if(err != cudaSuccess) delete[] data;
+        if(err != cudaSuccess) delete[] data;
 
-      nn::check_cuda(err);
+        cuda::check_cuda(err);
+      #else
+        throw std::runtime_error("CUDA is not enabled");
+      #endif
     }
 
     for(int64_t i = 0; i < count; ++i){

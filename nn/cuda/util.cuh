@@ -1,10 +1,13 @@
 #pragma once
 
-#include <string>
-#include <source_location>
-#include <cuda_runtime.h>
+#ifdef COBALT_715_USE_CUDA
 
-namespace cobalt_715::nn{
+#include <cuda_runtime.h>
+#include <string>
+#include <stdexcept>
+#include <source_location>
+
+namespace cobalt_715::nn::cuda{
 
 inline void check_cuda(cudaError_t err,
                        const std::source_location& location = std::source_location::current()){
@@ -20,4 +23,6 @@ inline void check_cuda(cudaError_t err,
   }
 }
 
-}//namespace cobalt_715::nn
+}//namespace cobalt_715::nn::cuda
+
+#endif //COBALT_715_USE_CUDA
