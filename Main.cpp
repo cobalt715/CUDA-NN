@@ -1,6 +1,6 @@
 //nvcc -I. -std=c++20 *.cpp nn/ops/*.cpp nn/ops/*.cu -o main
 //nvcc -DCOBALT_715_USE_CUDA -I. -std=c++20 *.cpp nn/ops/*.cpp nn/ops/*.cu -o main
-//g++ -I. -std=c++20 *.cpp nn/ops/*.cpp nn/ops/*.cu -o main
+//g++ -I. -std=c++20 *.cpp nn/ops/*.cpp -o main
 
 #include <iostream>
 #include "nn/Backend.hpp"
@@ -18,22 +18,25 @@ int main(){
     s1.at(i) = i / 10.0f;
   }
 
-  std::cout << s0 << std::endl;
-  std::cout << s1 << std::endl;
+  std::cout << "0" << s0 << std::endl;
+  std::cout << "1" << s1 << std::endl;
 
   tensor::Storage out(20,Backend::CPU);
 
-  //ops::vec::cpu::add(s0.data(),s1.data(),out.data(),s0.size());
+  ops::vec::cpu::add(s0.data(),s1.data(),out.data(),s0.size());
 
-  std::cout << out << std::endl;
+  std::cout << "2" << out << std::endl;
 
-  s0 = s0.toCUDA();
-  s1 = s1.toCUDA();
-  out = out.toCUDA();
+  tensor::Storage s01 = s0.toCUDA();
+  tensor::Storage s11 = s1.toCUDA();
+  tensor::Storage out1(20,Backend::CUDA);
 
-  ops::vec::cuda::add(s0.data(),s1.data(),out.data(),s0.size());
+  std::cout << "3" << s01 << std::endl;
+  std::cout << "4" << s11 << std::endl;
 
-  std::cout << out << std::endl;
+  ops::vec::cuda::sub(s01.data(),s11.data(),out1.data(),s0.size());
+
+  std::cout << "5" << out1 << std::endl;
 
   return 0;
 }

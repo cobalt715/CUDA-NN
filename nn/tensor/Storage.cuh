@@ -46,7 +46,7 @@ public:
       #ifdef COBALT_715_USE_CUDA
         const cudaError_t err = cudaMalloc(reinterpret_cast<void**>(&data_),size_ * sizeof(float));
 
-        cuda::check_cuda(err);
+        cuda::check(err);
       #else
         throw std::runtime_error("CUDA is not enabled");
       #endif
@@ -143,7 +143,7 @@ public:
       #ifdef COBALT_715_USE_CUDA
         const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyDeviceToHost);
 
-        cuda::check_cuda(err);
+        cuda::check(err);
       #else
         throw std::runtime_error("CUDA is not enabled");
       #endif
@@ -160,11 +160,11 @@ public:
       if(backend_ == Backend::CPU){
         const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyHostToDevice);
 
-        cuda::check_cuda(err);
+        cuda::check(err);
       }else if(backend_ == Backend::CUDA){
         const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyDeviceToDevice);
 
-        cuda::check_cuda(err);
+        cuda::check(err);
       }
 
       return s;
@@ -199,7 +199,7 @@ public:
 
         if(err != cudaSuccess) delete[] data;
 
-        cuda::check_cuda(err);
+        cuda::check(err);
       #else
         throw std::runtime_error("CUDA is not enabled");
       #endif

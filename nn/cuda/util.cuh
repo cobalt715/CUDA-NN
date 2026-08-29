@@ -9,7 +9,7 @@
 
 namespace cobalt_715::nn::cuda{
 
-inline void check_cuda(cudaError_t err,
+inline void check(cudaError_t err,
                        const std::source_location& location = std::source_location::current()){
 
   if(err != cudaSuccess){
