@@ -80,12 +80,22 @@ void div(const float *a,const float *b,float *out,const int64_t n) noexcept{
   #endif
 }
 
+//Kahan summation
 void dot(const float *a,const float *b,float *out,const int64_t n) noexcept{
   float sum = 0.0f;
+  float c = 0.0f;
 
-  for(int64_t i = 0;i < n;i++){
-    sum += a[i] * b[i];
+  for(int64_t i = 0; i < n; i++){
+    const float x = a[i] * b[i];
+
+    const float y = x - c;
+    const float t = sum + y;
+
+    c = (t - sum) - y;
+    sum = t;
   }
+
+  *out = sum;
 }
 
 }//namespace cobalt_715::nn::ops::vec::cpu

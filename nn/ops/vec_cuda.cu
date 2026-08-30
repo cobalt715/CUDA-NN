@@ -96,6 +96,7 @@ inline nn::cuda::LaunchConfig dot_kernel_config(const int64_t n) noexcept{
 void dot(const float *a,const float *b,float *out,const int64_t n){
   const nn::cuda::LaunchConfig lc = dot_kernel_config(n);
 
+  cudaMemset(out,0,sizeof(float));
   dot_kernel<<<lc.grid_,lc.block_>>>(a,b,out,n);
 
   nn::cuda::check(cudaGetLastError());
