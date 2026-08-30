@@ -48,7 +48,7 @@ public:
 
         cuda::check(err);
       #else
-        throw std::runtime_error("CUDA is not enabled");
+        cuda::throw_not_enabled();
       #endif
     }
   }
@@ -145,7 +145,7 @@ public:
 
         cuda::check(err);
       #else
-        throw std::runtime_error("CUDA is not enabled");
+        cuda::throw_not_enabled();
       #endif
     }
 
@@ -169,7 +169,7 @@ public:
 
       return s;
     #else
-      throw std::runtime_error("CUDA is not enabled");
+      cuda::throw_not_enabled();
     #endif
   }
 
@@ -201,7 +201,7 @@ public:
 
         cuda::check(err);
       #else
-        throw std::runtime_error("CUDA is not enabled");
+        cuda::throw_not_enabled();
       #endif
     }
 

@@ -6,7 +6,7 @@ namespace cobalt_715::nn::ops::vec::cpu{
 
 void add(const float *a,const float *b,float *out,const int64_t n) noexcept{
   #ifdef __AVX__
-  size_t i = 0;
+  int64_t i = 0;
   for(;i + 8 <= n;i += 8){
     __m256 va = _mm256_loadu_ps(a + i);
     __m256 vb = _mm256_loadu_ps(b + i);
@@ -25,7 +25,7 @@ void add(const float *a,const float *b,float *out,const int64_t n) noexcept{
 
 void sub(const float *a,const float *b,float *out,const int64_t n) noexcept{
   #ifdef __AVX__
-  size_t i = 0;
+  int64_t i = 0;
   for(;i + 8 <= n;i += 8){
     __m256 va = _mm256_loadu_ps(a + i);
     __m256 vb = _mm256_loadu_ps(b + i);
@@ -44,7 +44,7 @@ void sub(const float *a,const float *b,float *out,const int64_t n) noexcept{
 
 void mul(const float *a,const float *b,float *out,const int64_t n) noexcept{
   #ifdef __AVX__
-  size_t i = 0;
+  int64_t i = 0;
   for(;i + 8 <= n;i += 8){
     __m256 va = _mm256_loadu_ps(a + i);
     __m256 vb = _mm256_loadu_ps(b + i);
@@ -63,7 +63,7 @@ void mul(const float *a,const float *b,float *out,const int64_t n) noexcept{
 
 void div(const float *a,const float *b,float *out,const int64_t n) noexcept{
   #ifdef __AVX__
-  size_t i = 0;
+  int64_t i = 0;
   for(;i + 8 <= n;i += 8){
     __m256 va = _mm256_loadu_ps(a + i);
     __m256 vb = _mm256_loadu_ps(b + i);
@@ -78,6 +78,14 @@ void div(const float *a,const float *b,float *out,const int64_t n) noexcept{
     out[i] = a[i] / b[i];
   }
   #endif
+}
+
+void dot(const float *a,const float *b,float *out,const int64_t n) noexcept{
+  float sum = 0.0f;
+
+  for(int64_t i = 0;i < n;i++){
+    sum += a[i] * b[i];
+  }
 }
 
 }//namespace cobalt_715::nn::ops::vec::cpu
