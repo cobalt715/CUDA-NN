@@ -7,14 +7,16 @@
 #include <ostream>
 #include <algorithm>
 #include "nn/Backend.hpp"
+#include "nn/Dtype.hpp"
 #include "nn/cuda/config.cuh"
 #include "nn/cuda/util.cuh"
 
 namespace cobalt_715::nn::tensor{
 
+template<nn::dtype T=float>
 struct Storage{
 private:
-  float *data_ = nullptr;
+  T *data_ = nullptr;
   int64_t size_;
   Backend backend_;
 
@@ -41,10 +43,10 @@ public:
     }else if(size_ == 0) return;//要素が無いならnullptrになる
 
     if(backend_ == Backend::CPU){
-      data_ = new float[size_];
+      data_ = new T[size_];
     }else if(backend_ == Backend::CUDA){
       #ifdef COBALT_715_USE_CUDA
-        const cudaError_t err = cudaMalloc(reinterpret_cast<void**>(&data_),size_ * sizeof(float));
+        const cudaError_t err = cudaMalloc(reinterpret_cast<void**>(&data_),size_ * sizeof(T));
 
         cuda::check(err);
       #else
@@ -86,15 +88,15 @@ public:
     return *this;
   }
 
-  inline float* data() noexcept{
+  inline T* data() noexcept{
     return data_;
   }
 
-  inline const float* data() const noexcept{
+  inline const T* data() const noexcept{
     return data_;
   }
 
-  inline float& at(const int64_t i){
+  inline T& at(const int64_t i){
     #ifndef NDEBUG
       if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::at");
     #endif
@@ -102,7 +104,7 @@ public:
     return data_[i];
   }
 
-  inline const float& at(const int64_t i) const{
+  inline const T& at(const int64_t i) const{
     #ifndef NDEBUG
       if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::at");
     #endif
@@ -138,10 +140,10 @@ public:
     Storage s(size_,Backend::CPU);
     
     if(backend_ == Backend::CPU){
-      std::memcpy(s.data(),data_,size_ * sizeof(float));
+      std::memcpy(s.data(),data_,size_ * sizeof(T));
     }else if(backend_ == Backend::CUDA){
       #ifdef COBALT_715_USE_CUDA
-        const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyDeviceToHost);
+        const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(T),cudaMemcpyDeviceToHost);
 
         cuda::check(err);
       #else
@@ -158,11 +160,11 @@ public:
       Storage s(size_,Backend::CUDA);
 
       if(backend_ == Backend::CPU){
-        const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyHostToDevice);
+        const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(T),cudaMemcpyHostToDevice);
 
         cuda::check(err);
       }else if(backend_ == Backend::CUDA){
-        const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(float),cudaMemcpyDeviceToDevice);
+        const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(T),cudaMemcpyDeviceToDevice);
 
         cuda::check(err);
       }
@@ -183,19 +185,21 @@ public:
                        + std::to_string(size_)
                        + ", backend_="
                        + nn::to_string(backend_)
+                       + ", dtype="
+                       + nn::dtype_name<T>()
                        + ", data_={";
 
     const int64_t count = std::clamp<int64_t>(limit,0,size_);
 
-    float *data = nullptr;
+    T *data = nullptr;
 
     if(backend_ == Backend::CPU){
       data = data_;
     }else if(backend_ == Backend::CUDA){
       #ifdef COBALT_715_USE_CUDA
-        data = new float[count];
+        data = new T[count];
 
-        const cudaError_t err = cudaMemcpy(data,data_,count * sizeof(float),cudaMemcpyDeviceToHost);
+        const cudaError_t err = cudaMemcpy(data,data_,count * sizeof(T),cudaMemcpyDeviceToHost);
 
         if(err != cudaSuccess) delete[] data;
 
@@ -224,8 +228,8 @@ public:
   }
 };
 
-
-inline std::ostream& operator<<(std::ostream &o,const Storage &s){
+template<class T>
+inline std::ostream& operator<<(std::ostream &o,const Storage<T> &s){
   return o << s.to_string();
 }
 
