@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <ostream>
+#include <memory>
 #include <algorithm>
 #include "nn/Backend.hpp"
 #include "nn/Dtype.hpp"
@@ -198,17 +199,16 @@ public:
 
     const int64_t count = std::clamp<int64_t>(limit,0,size_);
 
-    T *data = nullptr;
+    const T *data = nullptr;
+    std::unique_ptr<T[]> host_data = std::make_unique<T[]>(count);
 
     if(backend_ == Backend::CPU){
       data = data_;
     }else if(backend_ == Backend::CUDA){
       #ifdef COBALT_715_USE_CUDA
-        data = new T[count];
+        const cudaError_t err = cudaMemcpy(host_data.get(),data_,count * sizeof(T),cudaMemcpyDeviceToHost);
 
-        const cudaError_t err = cudaMemcpy(data,data_,count * sizeof(T),cudaMemcpyDeviceToHost);
-
-        if(err != cudaSuccess) delete[] data;
+        data = host_data.get();
 
         cuda::check(err);
       #else
@@ -222,14 +222,14 @@ public:
     }
 
     if(count < size_){
-      text += ", ...";
+      if(count == 0){
+        text += "...";
+      }else{
+        text += ", ...";
+      }
     }
 
     text += "})";
-
-    if(backend_ == Backend::CUDA){
-      delete[] data;
-    }
 
     return text;
   }
@@ -237,7 +237,7 @@ public:
 
 template<class T>
 inline std::ostream& operator<<(std::ostream &o,const Storage<T> &s){
-  return o << s.to_string();
+  return o << s.to_string(8);
 }
 
 }//namespace cobalt_715::nn::tensor

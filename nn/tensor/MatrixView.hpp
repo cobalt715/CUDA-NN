@@ -37,15 +37,7 @@ public:
                        const int64_t cols,
                        StorageType &data,
                        const int64_t offset = 0
-                       ) : rows_(rows),
-                           cols_(cols),
-                           row_stride_(cols),
-                           col_stride_(1),
-                           data_(data),
-                           offset_(offset){
-
-    update_layout();
-  }
+                       ) : MatrixView(rows,cols,cols,1,data,offset){}
 
   constexpr MatrixView(const int64_t rows,
                        const int64_t cols,
@@ -59,6 +51,10 @@ public:
                            col_stride_(col_stride),
                            data_(data),
                            offset_(offset){
+
+    if(rows_ < 0 && cols_ < 0){
+      throw std::invalid_argument("tensor::Storage::constructor negative size");
+    }
 
     update_layout();
   }
@@ -115,6 +111,70 @@ public:
     return nn::dtype_name<T>();
   }
 
+  std::string to_string() const{
+    return to_string(rows_,cols_);
+  }
+
+  std::string to_string(const int64_t row,const int64_t col) const{
+    std::string text = "tensor::MatrixView(rows_="
+                       + std::to_string(rows_)
+                       + ", cols_="
+                       + std::to_string(cols_)
+                       + ", row_stride_="
+                       + std::to_string(row_stride_)
+                       + ", col_stride_="
+                       + std::to_string(col_stride_)
+                       + ", offset_="
+                       + std::to_string(offset_)
+                       + ", backend_="
+                       + nn::to_string(data_.backend())
+                       + ", dtype="
+                       + nn::dtype_name<T>()
+                       + ",\n  data_={\n";
+
+    const int64_t ro = std::clamp<int64_t>(row,0,rows_);
+
+    const int64_t co = std::clamp<int64_t>(col,0,cols_);
+
+    Storage<ValueType> data(0);
+
+    if(data_.backend() == Backend::CPU){
+      data = to_string_cpu_copy(ro,co);
+    }else if(data_.backend() == Backend::CUDA){
+      data = to_string_cuda_copy(ro,co);
+    }
+
+    if(co != 0){
+      for(int row = 0;row < ro;row++){
+        text += "    {";
+        for(int col = 0;col < co;col++){
+          text += std::to_string(data.at(row * co + col));
+
+          if(col + 1 < co){
+            text += " , ";
+          }else if(co < cols_){
+            text += " , ...";
+          }
+        }
+
+        if(row + 1 < rows_){
+          text += "},\n";
+        }else{
+         text += "}\n";
+        }
+      }
+    }
+
+    if(ro < rows_ || co == 0){
+      if(rows_ != 0 || cols_ != 0)
+        text += "    ...\n";
+    }
+
+    text += "  })";
+
+    return text;
+  }
+
 private:
   //data_.data()[offset_ + row * row_stride_ + col * col_stride_]でアクセスする
   StorageType &data_;//constなし
@@ -148,6 +208,16 @@ private:
       layout_ = Layout::STRIDED_SAFE;
     }
   }
+
+  Storage<ValueType> to_string_cpu_copy(const int64_t ro,const int64_t co) const;
+  Storage<ValueType> to_string_cuda_copy(const int64_t ro,const int64_t co) const;
 };
 
+template<class T>
+inline std::ostream& operator<<(std::ostream &o,const MatrixView<T> &mv){
+  return o << mv.to_string(4,4);
+}
+
 }//namespace cobalt_715::nn::tensor
+
+#include "MatrixView.inl"
