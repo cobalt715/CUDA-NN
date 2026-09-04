@@ -36,4 +36,17 @@ std::string dtype_name() noexcept{
   return name;
 }
 
+//templateをインスタンス化する
+#define COBALT_715_FOR_EACH_DTYPE(X) \
+  X(int32_t) \
+  X(int64_t) \
+  X(float) \
+  X(double)
+
+#define COBALT_715_FOR_EACH_CONST_DTYPE(X) \
+  X(const int32_t) \
+  X(const int64_t) \
+  X(const float) \
+  X(const double)
+
 }//namespace cobalt_715::nn

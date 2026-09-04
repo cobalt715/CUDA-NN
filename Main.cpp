@@ -64,5 +64,13 @@ int main(){
 
   std::cout << cmv.dtype() << std::endl;
 
+  tensor::Storage cu88 = arr.to(Backend::CPU);
+
+  std::cout << cu88 << std::endl;
+
+  tensor::MatrixView cu88v(8,8,cu88);
+
+  std::cout << cu88v << std::endl;
+
   return 0;
 }

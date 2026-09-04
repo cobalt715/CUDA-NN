@@ -143,6 +143,17 @@ public:
     return toCPU();
   }
 
+  //to(Backend)
+  Storage to(const Backend backend) const{
+    if(backend == Backend::CPU){
+      return toCPU();
+    }else if(backend == Backend::CUDA){
+      return toCUDA();
+    }
+
+    return toCPU();
+  }
+
   //to cpu
   Storage toCPU() const{
     Storage s(size_,Backend::CPU);
