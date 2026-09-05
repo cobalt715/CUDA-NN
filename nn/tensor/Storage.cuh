@@ -244,7 +244,7 @@ public:
       #endif
     }
 
-    for(int64_t i = 0; i < count; ++i){
+    for(int64_t i = 0;i < count;i++){
       if(i != 0) text += ", ";
       text += std::to_string(data[i]);
     }
@@ -263,7 +263,7 @@ public:
   }
 };
 
-template<class T>
+template<dtype T>
 inline std::ostream& operator<<(std::ostream &o,const Storage<T> &s){
   return o << s.to_string(8);
 }

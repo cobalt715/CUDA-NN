@@ -248,7 +248,7 @@ private:
   Storage<ValueType> to_string_cuda_copy(const int64_t ro,const int64_t co) const;
 };
 
-template<class T>
+template<dtype T>
 inline std::ostream& operator<<(std::ostream &o,const MatrixView<T> &mv){
   return o << mv.to_string(4,4);
 }
