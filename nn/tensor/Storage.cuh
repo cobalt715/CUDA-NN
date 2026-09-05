@@ -7,6 +7,7 @@
 #include <ostream>
 #include <memory>
 #include <algorithm>
+#include <initializer_list>
 #include "nn/Backend.hpp"
 #include "nn/Dtype.hpp"
 #include "nn/cuda/config.cuh"
@@ -38,7 +39,7 @@ private:
   }
 
 public:
-  Storage(const int64_t size,const Backend backend = Backend::CPU)
+  Storage(const int64_t size,const Backend backend=Backend::CPU)
     : size_(size),
       backend_(backend){
 
@@ -51,6 +52,22 @@ public:
     }else if(backend_ == Backend::CUDA){
       #ifdef COBALT_715_USE_CUDA
         const cudaError_t err = cudaMalloc(reinterpret_cast<void**>(&data_),size_ * sizeof(T));
+
+        cuda::check(err);
+      #else
+        cuda::throw_not_enabled();
+      #endif
+    }
+  }
+
+  Storage(const std::initializer_list<T> values,const Backend backend=Backend::CPU)
+    : Storage(values.size(),backend){
+
+    if(backend_ == Backend::CPU){
+      std::memcpy(data_,values.begin(),size_ * sizeof(T));
+    }else if(backend_ == Backend::CUDA){
+      #ifdef COBALT_715_USE_CUDA
+        const cudaError_t err = cudaMemcpy(data_,values.begin(),size_ * sizeof(T),cudaMemcpyHostToDevice);
 
         cuda::check(err);
       #else

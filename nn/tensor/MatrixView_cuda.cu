@@ -12,13 +12,12 @@
 namespace cobalt_715::nn::tensor{
 
 template<cobalt_715::nn::dtype T>
-__global__ void to_string_cuda_element_copy(const T *a,
-                     T *data,
-                     const int64_t ro,
-                     const int64_t co,
-                     const int64_t row_stride,
-                     const int64_t col_stride,
-                     const int64_t offset){
+__global__ void to_string_cuda_element_copy(T *data,
+                                            const T *a,
+                                            const int64_t ro,
+                                            const int64_t co,
+                                            const int64_t row_stride,
+                                            const int64_t col_stride){
 
   //templateがconstだとエラーを投げる
   static_assert(!std::is_const_v<T>,"nn/tensor/MatrixView.cu namespace::__global__ copy() T must not be const");
@@ -29,21 +28,21 @@ __global__ void to_string_cuda_element_copy(const T *a,
   if(co <= x) return;
   if(ro <= y) return;
 
-  data[y * co + x] = a[offset + y * row_stride + x * col_stride];
+  data[y * co + x] = a[y * row_stride + x * col_stride];
 }
 
 template<dtype T>
 Storage<std::remove_const_t<T>> MatrixView<T>::to_string_cuda_copy(const int64_t ro,const int64_t co) const{
-  Storage<std::remove_const_t<T>> data(ro * co,Backend::CUDA);
+  Storage<std::remove_const_t<T>> arr(ro * co,Backend::CUDA);
 
   const dim3 grid((co + 15) / 16,(ro + 15) / 16);
   const dim3 block(16,16);
 
-  to_string_cuda_element_copy<std::remove_const_t<T>><<<grid,block>>>(data_.data(),data.data(),ro,co,row_stride_,col_stride_,offset_);
+  to_string_cuda_element_copy<std::remove_const_t<T>><<<grid,block>>>(arr.data(),data_.data() + offset_,ro,co,row_stride_,col_stride_);
   nn::cuda::check(cudaGetLastError());
   nn::cuda::check(cudaDeviceSynchronize());
 
-  return data.toCPU();
+  return arr.toCPU();
 }
 
 #define INSTANTIATE_1(T) \
@@ -55,13 +54,12 @@ COBALT_715_FOR_EACH_CONST_DTYPE(INSTANTIATE_1)
 #define INSTANTIATE_2(T) \
   template __global__ void \
   to_string_cuda_element_copy( \
-  const T *a, \
   T *data, \
+  const T *a, \
   const int64_t ro, \
   const int64_t co, \
   const int64_t row_stride, \
-  const int64_t col_stride, \
-  const int64_t offset);
+  const int64_t col_stride);
 
 COBALT_715_FOR_EACH_DTYPE(INSTANTIATE_2)
 
