@@ -31,6 +31,28 @@ public:
     set_stride();
   }
 
+  inline T& at(const Storage<int64_t> &index){
+    check_index(index);
+
+    int64_t i = 0;
+    for(int64_t i = 0;i < shape_.size();i++){
+      i += shape_.at(i) * stride_.at(i);
+    }
+
+    return data_.at(i);
+  }
+
+  inline T& at(const Storage<int64_t> &index) const{
+    check_index(index);
+
+    int64_t i = 0;
+    for(int64_t i = 0;i < shape_.size();i++){
+      i += shape_.at(i) * stride_.at(i);
+    }
+
+    return data_.at(i);
+  }
+
   std::string to_string() const{
     return to_string(shape_);
   }
@@ -85,6 +107,20 @@ private:
     }
 
     device_stride_ = stride_.to(data_.backend());
+  }
+
+  //indexが正しいか確認する
+  inline void check_index(const Storage<int64_t>& index) const{
+    //#ifndef NDEBUG
+    if(shape_.size() != index.size())
+      throw std::runtime_error("tensor::Tensor check_index dimension mismatch");
+
+    for(int64_t i = 0;i < index.size();i++){
+      const T value = index.at(i);
+      if(value < 0 || shape_.at(i) <= value)
+        throw std::runtime_error("Tensor index out of bounds at dim");
+    }
+    //#endif
   }
 };
 

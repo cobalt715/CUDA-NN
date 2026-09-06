@@ -117,9 +117,25 @@ public:
     return data_;
   }
 
+  inline T* begin() noexcept{
+    return data_;
+  }
+
+  inline const T* begin() const noexcept{
+    return data_;
+  }
+
+  inline T* end() noexcept{
+    return data_ + size_;
+  }
+
+  inline const T* end() const noexcept{
+    return data_ + size_;
+  }
+
   inline T& at(const int64_t i){
     #ifndef NDEBUG
-      if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::at");
+    if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::at");
     #endif
 
     return data_[i];
@@ -127,7 +143,7 @@ public:
 
   inline const T& at(const int64_t i) const{
     #ifndef NDEBUG
-      if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::at");
+    if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::at");
     #endif
 
     return data_[i];
