@@ -10,16 +10,21 @@
 using namespace cobalt_715::nn;
 
 int main(){
-  tensor::Storage<int64_t> s({1,2,4,7,9},Backend::CUDA);
+  tensor::Storage<double> data(3 * 2 * 4,Backend::CPU);
+  for(int64_t i = 0;i < data.size();i++) data.at(i) = i;
+
+  std::cout << data << std::endl;
+
+  tensor::Storage<int64_t> s({3,2,4},Backend::CPU);
   std::cout << s << std::endl;
 
-  tensor::Tensor t0(s);
+  tensor::Tensor t0(s,data);
 
-  t0.at({0,1,3,4,5});
+  std::cout << t0.to_string({0}) << std::endl;
 
-  std::cout << t0.to_string() << std::endl;
+  std::cout << t0 << std::endl;
 
-  tensor::Tensor t1({1,4,2,6});
+  std::cout << t0.to_string({2,1,3}) << std::endl;
 
   return 0;
 }

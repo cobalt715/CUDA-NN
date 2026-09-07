@@ -176,6 +176,40 @@ public:
     return toCPU();
   }
 
+  Storage copy(const int64_t begin,const int64_t end) const{
+    return copy(begin,end,backend_);
+  }
+
+  Storage copy(const int64_t begin,const int64_t end,const Backend backend) const{
+    #ifndef NDEBUG
+    if(begin < 0 || end < begin || size_ < end) throw std::runtime_error("tensor::Storage::copy");
+    #endif
+
+    Storage<T> co(end - begin,(backend == backend_) ? backend : Backend::CPU);//同じなら同じ、違うなら一度CPUに移す
+
+    if(backend_ == Backend::CPU){
+      std::memcpy(co.data(),data_ + begin,(end - begin) * sizeof(T)); 
+    }else if(backend_ == Backend::CUDA){
+      #ifdef COBALT_715_USE_CUDA
+      cudaError_t err;
+      if(co.backend() != Backend::CUDA){
+        err = cudaMemcpy(co.data(),data_ + begin,(end - begin) * sizeof(T),cudaMemcpyDeviceToHost);
+      }else{
+        err = cudaMemcpy(co.data(),data_ + begin,(end - begin) * sizeof(T),cudaMemcpyDeviceToDevice);
+      }
+
+      cuda::check(err);
+      #else
+      cuda::throw_not_enabled();
+      #endif
+    }
+
+    if(backend != backend_){
+      return co.to(backend);
+    }
+    return co;
+  }
+
   //to(Backend)
   Storage to(const Backend backend) const{
     if(backend == Backend::CPU){
@@ -195,11 +229,11 @@ public:
       std::memcpy(s.data(),data_,size_ * sizeof(T));
     }else if(backend_ == Backend::CUDA){
       #ifdef COBALT_715_USE_CUDA
-        const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(T),cudaMemcpyDeviceToHost);
+      const cudaError_t err = cudaMemcpy(s.data(),data_,size_ * sizeof(T),cudaMemcpyDeviceToHost);
 
-        cuda::check(err);
+      cuda::check(err);
       #else
-        cuda::throw_not_enabled();
+      cuda::throw_not_enabled();
       #endif
     }
 

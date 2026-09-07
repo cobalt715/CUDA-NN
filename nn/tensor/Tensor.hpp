@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <ostream>
+#include <cassert>
 #include "nn/Backend.hpp"
 #include "nn/cuda/config.cuh"
 #include "nn/cuda/util.cuh"
@@ -31,26 +32,48 @@ public:
     set_stride();
   }
 
+  Tensor(const Storage<int64_t> &shape,const Storage<T> &data,Backend backend=Backend::CPU)
+    : data_(data.clone()),
+      shape_(shape.toCPU()),
+      device_shape_(shape.to(backend)),
+      stride_(0),
+      device_stride_(0){
+
+    if(data.size() != calculate_data_size(shape_))
+      throw std::runtime_error("tensor::Tensor");
+
+    set_stride();
+  }
+
   inline T& at(const Storage<int64_t> &index){
     check_index(index);
 
-    int64_t i = 0;
+    int64_t offset = 0;
     for(int64_t i = 0;i < shape_.size();i++){
-      i += shape_.at(i) * stride_.at(i);
+      offset += index.at(i) * stride_.at(i);
     }
 
-    return data_.at(i);
+    return data_.at(offset);
   }
 
-  inline T& at(const Storage<int64_t> &index) const{
+  inline const T& at(const Storage<int64_t> &index) const{
     check_index(index);
 
-    int64_t i = 0;
+    int64_t offset = 0;
     for(int64_t i = 0;i < shape_.size();i++){
-      i += shape_.at(i) * stride_.at(i);
+      offset += index.at(i) * stride_.at(i);
     }
 
-    return data_.at(i);
+    return data_.at(offset);
+  }
+
+  inline size_t rank() const{
+    return shape_.size();
+  }
+
+  inline int64_t dim(size_t i) const{
+    assert(i < shape_.size());
+    return shape_.at(i);
   }
 
   std::string to_string() const{
@@ -75,7 +98,35 @@ public:
     text += "},\n               backend_="
              + nn::to_string(data_.backend())
              + ",\n               dtype_="
-             + nn::dtype_name<T>();
+             + nn::dtype_name<T>()
+             + ",\n               data_=";
+
+    Storage<int64_t> shape = shape_.toCPU();
+
+    int64_t copy_len = 1;
+
+    for(int64_t i = 0;i < shape.size();i++){
+      if(i < range.size()){
+        const int64_t value = std::clamp<int64_t>(range.at(i),0,shape_.at(i));
+        shape.at(i) = value;
+        copy_len *= value;
+      }
+    }
+
+    if(copy_len == 0){
+      text += "{\n                ...\n               }";
+    }else{
+      Storage<T> data = data_.copy(0,copy_len,Backend::CPU);
+
+      Storage<int64_t> index(shape.size(),Backend::CPU);
+      for(int64_t &i:index) i = 0;
+
+      const Tensor<T> te(shape,data,Backend::CPU);
+
+      to_string_recursive(text,index,te,0);
+    }
+
+    text += ")";
 
     return text;
   }
@@ -86,6 +137,41 @@ private:
   Storage<int64_t> stride_;
   Storage<int64_t> device_shape_;
   Storage<int64_t> device_stride_;
+
+  inline void to_string_recursive(std::string &text,
+                                  Storage<int64_t> &index,
+                                  const Tensor<T> &te,
+                                  const int64_t dim) const{
+
+    if(dim == 0){
+      text += "{\n";
+    }else{
+      if(dim + 1 == te.rank()){
+        text += std::string(15 + 2 * dim,' ') + "{";
+      }else{
+        text += std::string(15 + 2 * dim,' ') + "{\n";
+      }
+    }
+
+    for(int64_t i = 0;i < te.dim(dim);i++){
+      index.at(dim) = i;
+
+      if(dim + 1 == te.rank()){
+        if(i != 0) text += ", ";
+        text += std::to_string(te.at(index));
+      }else{
+        to_string_recursive(text,index,te,dim + 1);
+      }
+    }
+
+    if(dim + 1 == te.rank()){
+      text += "}\n";
+    }else if(dim == 0){
+      text += std::string(15 + 2 * dim,' ') + "}";
+    }else{
+      text += std::string(15 + 2 * dim,' ') + "}\n";
+    }
+  }
 
   //data_のsizeを計算する
   inline static int64_t calculate_data_size(const Storage<int64_t>& shape){
@@ -116,7 +202,7 @@ private:
       throw std::runtime_error("tensor::Tensor check_index dimension mismatch");
 
     for(int64_t i = 0;i < index.size();i++){
-      const T value = index.at(i);
+      const int64_t value = index.at(i);
       if(value < 0 || shape_.at(i) <= value)
         throw std::runtime_error("Tensor index out of bounds at dim");
     }
