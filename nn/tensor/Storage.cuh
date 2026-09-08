@@ -176,7 +176,7 @@ public:
     return toCPU();
   }
 
-  Storage copy(const int64_t begin,const int64_t end) const{
+  /*Storage copy(const int64_t begin,const int64_t end) const{
     return copy(begin,end,backend_);
   }
 
@@ -208,7 +208,7 @@ public:
       return co.to(backend);
     }
     return co;
-  }
+  }*/
 
   //to(Backend)
   Storage to(const Backend backend) const{

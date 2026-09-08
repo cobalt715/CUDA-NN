@@ -45,6 +45,22 @@ public:
     set_stride();
   }
 
+  inline const Storage<int64_t>& shape() const{
+    return shape_;
+  }
+
+  inline const Storage<int64_t>& device_shape() const{
+    return device_shape_;
+  }
+
+  inline const Storage<int64_t>& stride() const{
+    return stride_;
+  }
+
+  inline const Storage<int64_t>& device_stride() const{
+    return device_stride_;
+  }
+
   inline T& at(const Storage<int64_t> &index){
     check_index(index);
 
@@ -67,7 +83,7 @@ public:
     return data_.at(offset);
   }
 
-  inline size_t rank() const{
+  inline int64_t rank() const{
     return shape_.size();
   }
 
@@ -76,30 +92,38 @@ public:
     return shape_.at(i);
   }
 
+  inline int64_t numel() const noexcept{
+    return data_.size();
+  }
+
+  inline Backend backend() const noexcept{
+    return data_.backend();
+  }
+
   std::string to_string() const{
     return to_string(shape_);
   }
 
   std::string to_string(const Storage<int64_t> &range) const{
-    std::string text = "tensor::Tensor(shape_={";
+    std::string text = "tensor::Tensor(\n  shape_={";
 
     for(int64_t i = 0;i < shape_.size();i++){
       if(i != 0) text += ", ";
       text += std::to_string(shape_.at(i));
     }
 
-    text += "},\n               stride_={";
+    text += "},\n  stride_={";
 
     for(int64_t i = 0;i < stride_.size();i++){
       if(i != 0) text += ", ";
       text += std::to_string(stride_.at(i));
     }
 
-    text += "},\n               backend_="
+    text += "},\n  backend_="
              + nn::to_string(data_.backend())
-             + ",\n               dtype_="
+             + ",\n  dtype_="
              + nn::dtype_name<T>()
-             + ",\n               data_=";
+             + ",\n  data_=";
 
     Storage<int64_t> shape = shape_.toCPU();
 
@@ -113,10 +137,24 @@ public:
       }
     }
 
+    Storage<int64_t> stride(shape.size(),Backend::CPU);
+
+    int64_t base = 1;
+    for(int64_t i = shape.size();i-- > 0;){
+      stride.at(i) = base;
+      base *= shape.at(i);
+    }
+
     if(copy_len == 0){
-      text += "{\n                ...\n               }";
+      text += "{\n          ...\n        }";
     }else{
-      Storage<T> data = data_.copy(0,copy_len,Backend::CPU);
+      Storage<T> data(0);
+
+      if(backend() == Backend::CPU){
+        data = to_string_cpu_copy(copy_len,stride);
+      }else if(backend() == Backend::CUDA){
+        data = to_string_cuda_copy(copy_len,stride);
+      }
 
       Storage<int64_t> index(shape.size(),Backend::CPU);
       for(int64_t &i:index) i = 0;
@@ -138,6 +176,12 @@ private:
   Storage<int64_t> device_shape_;
   Storage<int64_t> device_stride_;
 
+  Storage<T> to_string_cpu_copy(const int64_t copy_len,
+                                const Storage<int64_t> &stride) const;
+
+  Storage<T> to_string_cuda_copy(const int64_t copy_len,
+                                 const Storage<int64_t> &stride) const;
+
   inline void to_string_recursive(std::string &text,
                                   Storage<int64_t> &index,
                                   const Tensor<T> &te,
@@ -147,9 +191,9 @@ private:
       text += "{\n";
     }else{
       if(dim + 1 == te.rank()){
-        text += std::string(15 + 2 * dim,' ') + "{";
+        text += std::string(8 + 2 * dim,' ') + "{";
       }else{
-        text += std::string(15 + 2 * dim,' ') + "{\n";
+        text += std::string(8 + 2 * dim,' ') + "{\n";
       }
     }
 
@@ -164,13 +208,25 @@ private:
       }
     }
 
-    if(dim + 1 == te.rank()){
-      text += "}\n";
-    }else if(dim == 0){
-      text += std::string(15 + 2 * dim,' ') + "}";
-    }else{
-      text += std::string(15 + 2 * dim,' ') + "}\n";
+    if(te.dim(dim) < shape_.at(dim)){
+      if(dim + 1 == te.rank()){
+        text += ", ...";
+      }else{
+        text += std::string(10 + 2 * dim,' ') + "...\n";
+      }
     }
+
+    if(dim + 1 == te.rank()){
+      text += "}";
+    }else{
+      text += std::string(8 + 2 * dim,' ') + "}";
+    }
+
+    if(dim > 0){
+      if(index.at(dim - 1) + 1 < shape_.at(dim - 1)) text += ",";
+    }
+
+    if(dim != 0) text += "\n";
   }
 
   //data_のsizeを計算する

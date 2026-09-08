@@ -12,12 +12,12 @@
 namespace cobalt_715::nn::tensor{
 
 template<cobalt_715::nn::dtype T>
-__global__ void to_string_cuda_element_copy(T *data,
-                                            const T *a,
-                                            const int64_t ro,
-                                            const int64_t co,
-                                            const int64_t row_stride,
-                                            const int64_t col_stride){
+__global__ void matrix_to_string_cuda_element_copy(T *data,
+                                                   const T *arr,
+                                                   const int64_t ro,
+                                                   const int64_t co,
+                                                   const int64_t row_stride,
+                                                   const int64_t col_stride){
 
   //templateがconstだとエラーを投げる
   static_assert(!std::is_const_v<T>,"nn/tensor/MatrixView.cu namespace::__global__ copy() T must not be const");
@@ -28,7 +28,7 @@ __global__ void to_string_cuda_element_copy(T *data,
   if(co <= x) return;
   if(ro <= y) return;
 
-  data[y * co + x] = a[y * row_stride + x * col_stride];
+  data[y * co + x] = arr[y * row_stride + x * col_stride];
 }
 
 template<dtype T>
@@ -38,7 +38,7 @@ Storage<std::remove_const_t<T>> MatrixView<T>::to_string_cuda_copy(const int64_t
   const dim3 grid((co + 15) / 16,(ro + 15) / 16);
   const dim3 block(16,16);
 
-  to_string_cuda_element_copy<std::remove_const_t<T>><<<grid,block>>>(arr.data(),data_.data() + offset_,ro,co,row_stride_,col_stride_);
+  matrix_to_string_cuda_element_copy<std::remove_const_t<T>><<<grid,block>>>(arr.data(),data_.data() + offset_,ro,co,row_stride_,col_stride_);
   nn::cuda::check(cudaGetLastError());
   nn::cuda::check(cudaDeviceSynchronize());
 
@@ -53,9 +53,9 @@ COBALT_715_FOR_EACH_CONST_DTYPE(INSTANTIATE_1)
 
 #define INSTANTIATE_2(T) \
   template __global__ void \
-  to_string_cuda_element_copy( \
+  matrix_to_string_cuda_element_copy( \
   T *data, \
-  const T *a, \
+  const T *arr, \
   const int64_t ro, \
   const int64_t co, \
   const int64_t row_stride, \

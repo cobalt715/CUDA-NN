@@ -13,7 +13,13 @@ int main(){
   tensor::Storage<double> data(3 * 2 * 4,Backend::CPU);
   for(int64_t i = 0;i < data.size();i++) data.at(i) = i;
 
+  //data = data.toCUDA();
+
   std::cout << data << std::endl;
+
+  tensor::MatrixView<double> mv(6,4,data);
+
+  std::cout << mv << std::endl;
 
   tensor::Storage<int64_t> s({3,2,4},Backend::CPU);
   std::cout << s << std::endl;
