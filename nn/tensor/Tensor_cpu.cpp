@@ -5,7 +5,7 @@
 
 namespace cobalt_715::nn::tensor{
 
-template<nn::dtype T>
+template<nn::mutable_dtype T>
 Storage<T> Tensor<T>::to_string_cpu_copy(const int64_t copy_len,
                                       const Storage<int64_t> &stride) const{
 

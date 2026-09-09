@@ -1,10 +1,20 @@
 #include <immintrin.h>
 #include <cstddef>
+#include <type_traits>
 #include "vec.cuh"
+#include "nn/Dtype.hpp"
 
 namespace cobalt_715::nn::ops::vec::cpu{
 
-void add(const float *a,const float *b,float *out,const int64_t n) noexcept{
+template<nn::mutable_dtype T>
+void add(const T *a,const T *b,T *out,const int64_t n) noexcept{
+  if constexpr (!std::is_same_v<T,float>){
+    for(int64_t i = 0;i < n;i++){
+      out[i] = a[i] + b[i];
+    }
+    return;
+  }
+
   #ifdef __AVX__
   int64_t i = 0;
   for(;i + 8 <= n;i += 8){
@@ -17,13 +27,21 @@ void add(const float *a,const float *b,float *out,const int64_t n) noexcept{
     out[i] = a[i] + b[i];
   }
   #else
-  for(size_t i = 0;i < n;i++){
+  for(int64_t i = 0;i < n;i++){
     out[i] = a[i] + b[i];
   }
   #endif
 }
 
-void sub(const float *a,const float *b,float *out,const int64_t n) noexcept{
+template<nn::mutable_dtype T>
+void sub(const T *a,const T *b,T *out,const int64_t n) noexcept{
+  if constexpr (!std::is_same_v<T,float>){
+    for(int64_t i = 0;i < n;i++){
+      out[i] = a[i] - b[i];
+    }
+    return;
+  }
+
   #ifdef __AVX__
   int64_t i = 0;
   for(;i + 8 <= n;i += 8){
@@ -36,13 +54,21 @@ void sub(const float *a,const float *b,float *out,const int64_t n) noexcept{
     out[i] = a[i] - b[i];
   }
   #else
-  for(size_t i = 0;i < n;i++){
+  for(int64_t i = 0;i < n;i++){
     out[i] = a[i] - b[i];
   }
   #endif
 }
 
-void mul(const float *a,const float *b,float *out,const int64_t n) noexcept{
+template<nn::mutable_dtype T>
+void mul(const T *a,const T *b,T *out,const int64_t n) noexcept{
+  if constexpr (!std::is_same_v<T,float>){
+    for(int64_t i = 0;i < n;i++){
+      out[i] = a[i] * b[i];
+    }
+    return;
+  }
+
   #ifdef __AVX__
   int64_t i = 0;
   for(;i + 8 <= n;i += 8){
@@ -55,13 +81,21 @@ void mul(const float *a,const float *b,float *out,const int64_t n) noexcept{
     out[i] = a[i] * b[i];
   }
   #else
-  for(size_t i = 0;i < n;i++){
+  for(int64_t i = 0;i < n;i++){
     out[i] = a[i] * b[i];
   }
   #endif
 }
 
-void div(const float *a,const float *b,float *out,const int64_t n) noexcept{
+template<nn::mutable_dtype T>
+void div(const T *a,const T *b,T *out,const int64_t n) noexcept{
+  if constexpr (!std::is_same_v<T,float>){
+    for(int64_t i = 0;i < n;i++){
+      out[i] = a[i] / b[i];
+    }
+    return;
+  }
+
   #ifdef __AVX__
   int64_t i = 0;
   for(;i + 8 <= n;i += 8){
@@ -74,22 +108,31 @@ void div(const float *a,const float *b,float *out,const int64_t n) noexcept{
     out[i] = a[i] / b[i];
   }
   #else
-  for(size_t i = 0;i < n;i++){
+  for(int64_t i = 0;i < n;i++){
     out[i] = a[i] / b[i];
   }
   #endif
 }
 
+#define INSTANTIATE_ADD_SUB_MUL_DIV(T) \
+  template void add(const T *a,const T *b,T *out,const int64_t n) noexcept; \
+  template void sub(const T *a,const T *b,T *out,const int64_t n) noexcept; \
+  template void mul(const T *a,const T *b,T *out,const int64_t n) noexcept; \
+  template void div(const T *a,const T *b,T *out,const int64_t n) noexcept;
+
+COBALT_715_FOR_EACH_DTYPE(INSTANTIATE_ADD_SUB_MUL_DIV)
+
 //Kahan summation
-void dot(const float *a,const float *b,float *out,const int64_t n) noexcept{
-  float sum = 0.0f;
-  float c = 0.0f;
+template<nn::mutable_dtype T>
+void dot(const T *a,const T *b,T *out,const int64_t n) noexcept{
+  T sum = 0;
+  T c = 0;
 
   for(int64_t i = 0; i < n; i++){
-    const float x = a[i] * b[i];
+    const T x = a[i] * b[i];
 
-    const float y = x - c;
-    const float t = sum + y;
+    const T y = x - c;
+    const T t = sum + y;
 
     c = (t - sum) - y;
     sum = t;
@@ -97,5 +140,10 @@ void dot(const float *a,const float *b,float *out,const int64_t n) noexcept{
 
   *out = sum;
 }
+
+#define INSTANTIATE_DOT(T) \
+  template void dot(const T *a,const T *b,T *out,const int64_t n) noexcept;
+
+COBALT_715_FOR_EACH_DTYPE(INSTANTIATE_DOT)
 
 }//namespace cobalt_715::nn::ops::vec::cpu

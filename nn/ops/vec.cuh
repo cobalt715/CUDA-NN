@@ -1,28 +1,45 @@
 #pragma once
 
 #include <cstdint>
+#include <nn/Dtype.hpp>
 
 namespace cobalt_715::nn::ops::vec{
 
 namespace cpu{
 
-void add(const float *a,const float *b,float *out,const int64_t n) noexcept;
-void sub(const float *a,const float *b,float *out,const int64_t n) noexcept;
-void mul(const float *a,const float *b,float *out,const int64_t n) noexcept;
-void div(const float *a,const float *b,float *out,const int64_t n) noexcept;
+template<nn::mutable_dtype T>
+void add(const T *a,const T *b,T *out,const int64_t n) noexcept;
 
-void dot(const float *a,const float *b,float *out,const int64_t n) noexcept;
+template<nn::mutable_dtype T>
+void sub(const T *a,const T *b,T *out,const int64_t n) noexcept;
+
+template<nn::mutable_dtype T>
+void mul(const T *a,const T *b,T *out,const int64_t n) noexcept;
+
+template<nn::mutable_dtype T>
+void div(const T *a,const T *b,T *out,const int64_t n) noexcept;
+
+template<nn::mutable_dtype T>
+void dot(const T *a,const T *b,T *out,const int64_t n) noexcept;
 
 }//namespace cpu
 
 namespace cuda{
 
-void add(const float *a,const float *b,float *out,const int64_t n);
-void sub(const float *a,const float *b,float *out,const int64_t n);
-void mul(const float *a,const float *b,float *out,const int64_t n);
-void div(const float *a,const float *b,float *out,const int64_t n);
+template<nn::mutable_dtype T>
+void add(const T *a,const T *b,T *out,const int64_t n);
 
-void dot(const float *a,const float *b,float *out,const int64_t n);
+template<nn::mutable_dtype T>
+void sub(const T *a,const T *b,T *out,const int64_t n);
+
+template<nn::mutable_dtype T>
+void mul(const T *a,const T *b,T *out,const int64_t n);
+
+template<nn::mutable_dtype T>
+void div(const T *a,const T *b,T *out,const int64_t n);
+
+template<nn::mutable_dtype T>
+void dot(const T *a,const T *b,T *out,const int64_t n);
 
 }//namespace cuda
 

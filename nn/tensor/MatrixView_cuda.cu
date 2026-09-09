@@ -31,6 +31,18 @@ __global__ void matrix_to_string_cuda_element_copy(T *data,
   data[y * co + x] = arr[y * row_stride + x * col_stride];
 }
 
+#define INSTANTIATE_MATRIX_TO_STRING_CUDA_ELEMENT_COPY(T) \
+  template __global__ void \
+  matrix_to_string_cuda_element_copy( \
+  T *data, \
+  const T *arr, \
+  const int64_t ro, \
+  const int64_t co, \
+  const int64_t row_stride, \
+  const int64_t col_stride);
+
+COBALT_715_FOR_EACH_DTYPE(INSTANTIATE_MATRIX_TO_STRING_CUDA_ELEMENT_COPY)
+
 template<dtype T>
 Storage<std::remove_const_t<T>> MatrixView<T>::to_string_cuda_copy(const int64_t ro,const int64_t co) const{
   Storage<std::remove_const_t<T>> arr(ro * co,Backend::CUDA);
@@ -45,23 +57,11 @@ Storage<std::remove_const_t<T>> MatrixView<T>::to_string_cuda_copy(const int64_t
   return arr.toCPU();
 }
 
-#define INSTANTIATE_1(T) \
+#define INSTANTIATE_TO_STRING_CUDA_COPY(T) \
   template Storage<std::remove_const_t<T>> MatrixView<T>::to_string_cuda_copy(const int64_t ro,const int64_t co) const;
 
-COBALT_715_FOR_EACH_DTYPE(INSTANTIATE_1)
-COBALT_715_FOR_EACH_CONST_DTYPE(INSTANTIATE_1)
-
-#define INSTANTIATE_2(T) \
-  template __global__ void \
-  matrix_to_string_cuda_element_copy( \
-  T *data, \
-  const T *arr, \
-  const int64_t ro, \
-  const int64_t co, \
-  const int64_t row_stride, \
-  const int64_t col_stride);
-
-COBALT_715_FOR_EACH_DTYPE(INSTANTIATE_2)
+COBALT_715_FOR_EACH_DTYPE(INSTANTIATE_TO_STRING_CUDA_COPY)
+COBALT_715_FOR_EACH_CONST_DTYPE(INSTANTIATE_TO_STRING_CUDA_COPY)
 
 }//namespace cobalt_715::nn::tensor
 

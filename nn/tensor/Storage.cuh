@@ -15,11 +15,8 @@
 
 namespace cobalt_715::nn::tensor{
 
-template<nn::dtype T=float>
+template<nn::mutable_dtype T=float>
 struct Storage{
-  //templateがconstだとエラーを投げる
-  static_assert(!std::is_const_v<T>,"tensor::Storage T must not be const");
-
 private:
   T *data_ = nullptr;
   int64_t size_;

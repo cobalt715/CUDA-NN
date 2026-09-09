@@ -11,7 +11,7 @@
 
 namespace cobalt_715::nn::tensor{
 
-template<cobalt_715::nn::dtype T>
+template<cobalt_715::nn::mutable_dtype T>
 Storage<T> Tensor<T>::to_string_cuda_copy(const int64_t copy_len,
                                           const Storage<int64_t> &stride) const{
   nn::cuda::throw_not_enabled();

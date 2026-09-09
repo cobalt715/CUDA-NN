@@ -11,7 +11,7 @@
 
 namespace cobalt_715::nn::tensor{
 
-template<cobalt_715::nn::dtype T>
+template<cobalt_715::nn::mutable_dtype T>
 __global__ void tensor_to_string_cuda_element_copy(T *data,
                                                    const T *arr,
                                                    const int64_t *data_stride,
@@ -35,7 +35,7 @@ __global__ void tensor_to_string_cuda_element_copy(T *data,
   data[x] = arr[offset];
 }
 
-template<cobalt_715::nn::dtype T>
+template<cobalt_715::nn::mutable_dtype T>
 Storage<T> Tensor<T>::to_string_cuda_copy(const int64_t copy_len,
                                           const Storage<int64_t> &stride) const{
 

@@ -14,11 +14,8 @@
 namespace cobalt_715::nn::tensor{
 
 //任意次元テンソル
-template<nn::dtype T=float>
+template<nn::mutable_dtype T=float>
 struct Tensor{
-  //templateがconstだとエラーを投げる
-  static_assert(!std::is_const_v<T>,"tensor::Tensor T must not be const");
-
 public:
   Tensor(const Storage<int64_t> &shape,Backend backend=Backend::CPU)
     : data_(0),

@@ -13,6 +13,16 @@ concept dtype =
   std::is_same_v<std::remove_cv_t<T>,float> ||
   std::is_same_v<std::remove_cv_t<T>,double>;
 
+template<class T>
+concept mutable_dtype =
+    dtype<T> &&
+    !std::is_const_v<T>;
+
+template<class T>
+concept const_dtype =
+    dtype<T> &&
+    std::is_const_v<T>;
+
 template<dtype T>
 std::string dtype_name() noexcept{
   using U = std::remove_cv_t<T>;
