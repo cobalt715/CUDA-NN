@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <type_traits>
 #include "vec.cuh"
-#include "nn/Dtype.hpp"
+#include "nn/dtype.hpp"
 
 namespace cobalt_715::nn::ops::vec::cpu{
 
@@ -13,7 +13,7 @@ void add(const T *a,const T *b,T *out,const int64_t n) noexcept{
       out[i] = a[i] + b[i];
     }
     return;
-  }
+  }else{
 
   #ifdef __AVX__
   int64_t i = 0;
@@ -31,6 +31,7 @@ void add(const T *a,const T *b,T *out,const int64_t n) noexcept{
     out[i] = a[i] + b[i];
   }
   #endif
+  }
 }
 
 template<nn::mutable_dtype T>
@@ -40,7 +41,7 @@ void sub(const T *a,const T *b,T *out,const int64_t n) noexcept{
       out[i] = a[i] - b[i];
     }
     return;
-  }
+  }else{
 
   #ifdef __AVX__
   int64_t i = 0;
@@ -58,6 +59,7 @@ void sub(const T *a,const T *b,T *out,const int64_t n) noexcept{
     out[i] = a[i] - b[i];
   }
   #endif
+  }
 }
 
 template<nn::mutable_dtype T>
@@ -67,7 +69,7 @@ void mul(const T *a,const T *b,T *out,const int64_t n) noexcept{
       out[i] = a[i] * b[i];
     }
     return;
-  }
+  }else{
 
   #ifdef __AVX__
   int64_t i = 0;
@@ -85,6 +87,7 @@ void mul(const T *a,const T *b,T *out,const int64_t n) noexcept{
     out[i] = a[i] * b[i];
   }
   #endif
+  }
 }
 
 template<nn::mutable_dtype T>
@@ -94,7 +97,7 @@ void div(const T *a,const T *b,T *out,const int64_t n) noexcept{
       out[i] = a[i] / b[i];
     }
     return;
-  }
+  }else{
 
   #ifdef __AVX__
   int64_t i = 0;
@@ -112,6 +115,7 @@ void div(const T *a,const T *b,T *out,const int64_t n) noexcept{
     out[i] = a[i] / b[i];
   }
   #endif
+  }
 }
 
 #define INSTANTIATE_ADD_SUB_MUL_DIV(T) \

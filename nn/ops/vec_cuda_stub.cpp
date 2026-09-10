@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 #include "vec.cuh"
-#include "nn/Dtype.hpp"
+#include "nn/dtype.hpp"
 #include "nn/cuda/util.cuh"
 
 namespace cobalt_715::nn::ops::vec::cuda{

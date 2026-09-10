@@ -1,6 +1,6 @@
 #pragma once
 
-#include "nn/Dtype.hpp"
+#include "nn/dtype.hpp"
 #include "nn/cuda/config.cuh"
 
 namespace cobalt_715::nn::ops::op{

@@ -1,7 +1,7 @@
 #include <cstdint>
 #include "Tensor.hpp"
 #include "Storage.cuh"
-#include "nn/Dtype.hpp"
+#include "nn/dtype.hpp"
 
 namespace cobalt_715::nn::tensor{
 

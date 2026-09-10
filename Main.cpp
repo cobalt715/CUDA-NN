@@ -6,80 +6,62 @@
 #include "nn/tensor/Tensor.hpp"
 #include "nn/tensor/MatrixView.hpp"
 #include "nn/ops/vec.cuh"
+#include "nn/ops/gemm.cuh"
 
 using namespace cobalt_715::nn;
 
 int main(){
-  {
-  tensor::Storage<int64_t> a(10,Backend::CPU);
-  tensor::Storage<int64_t> b(10,Backend::CPU);
-  tensor::Storage<int64_t> out(1,Backend::CPU);
+  tensor::Storage<float> a(1024 * 1024,Backend::CPU);
+  tensor::Storage<float> b(1024 * 1024,Backend::CPU);
+  tensor::Storage<float> out(1024 * 1024,Backend::CPU);
 
-  for(int i = 0;i < a.size();i++){
+  for(int64_t i = 0;i < a.size();i++){
     a.at(i) = i;
-    b.at(i) = i + 3;
   }
 
-  std::cout << "a:" << a << std::endl;
-  std::cout << "b:" << b << std::endl;
+  for(int64_t i = 0;i < b.size();i++){
+    b.at(i) = i * 0.1;
+  }
 
-  ops::vec::cpu::dot(a.data(),b.data(),out.data(),a.size());
+  for(int64_t i = 0;i < out.size();i++){
+    out.at(i) = -i * 0.5;
+  }
 
-  std::cout << out << std::endl;
+  tensor::MatrixView<float> amv(1024,1024,a);
+  tensor::MatrixView<float> bmv(1024,1024,b);
+  tensor::MatrixView<float> omv(1024,1024,out);
+
+  auto t0 = std::chrono::high_resolution_clock::now();
+  tensor::MatrixView<float>::matmul_impl<float,float,float>(1,amv,bmv,0,omv);
+  auto t1 = std::chrono::high_resolution_clock::now();
+
+  auto t2 = std::chrono::high_resolution_clock::now();
+  tensor::MatrixView<float>::matmul_impl<float,float,float>(1,amv,bmv,0,omv);
+  auto t3 = std::chrono::high_resolution_clock::now();
 
   a = a.toCUDA();
   b = b.toCUDA();
-  tensor::Storage<int64_t> outc(1,Backend::CUDA);
+  out = out.toCUDA();
 
-  ops::vec::cuda::dot(a.data(),b.data(),outc.data(),a.size());
+  auto t4 = std::chrono::high_resolution_clock::now();
+  tensor::MatrixView<float>::matmul_impl<float,float,float>(1,amv,bmv,0,omv);
+  //cudaDeviceSynchronize();
+  auto t5 = std::chrono::high_resolution_clock::now();
 
-  std::cout << outc << std::endl;
-  }
+  auto t6 = std::chrono::high_resolution_clock::now();
+  tensor::MatrixView<float>::matmul_impl<float,float,float>(1,amv,bmv,0,omv);
+  //cudaDeviceSynchronize();
+  auto t7 = std::chrono::high_resolution_clock::now();
 
-  tensor::Storage<int32_t> a(10,Backend::CPU);
-  tensor::Storage<int32_t> b(10,Backend::CPU);
-  tensor::Storage<int32_t> out(10,Backend::CPU);
-
-  for(int i = 0;i < a.size();i++){
-    a.at(i) = i;
-    b.at(i) = (i + 1) * 1.1f;
-  }
-
-  std::cout << "a:" << a << std::endl;
-  std::cout << "b:" << b << std::endl;
-
-  ops::vec::cpu::add(a.data(),b.data(),out.data(),a.size());
-  std::cout << out << std::endl;
-  ops::vec::cpu::sub(a.data(),b.data(),out.data(),a.size());
-  std::cout << out << std::endl;
-  ops::vec::cpu::mul(a.data(),b.data(),out.data(),a.size());
-  std::cout << out << std::endl;
-  ops::vec::cpu::div(a.data(),b.data(),out.data(),a.size());
-  std::cout << out << std::endl;
-
-  tensor::Storage<double> ac(10,Backend::CPU);
-  tensor::Storage<double> bc(10,Backend::CPU);
-  tensor::Storage<double> outc(10,Backend::CUDA);
-
-  for(int i = 0;i < ac.size();i++){
-    ac.at(i) = i;
-    bc.at(i) = i * 11;
-  }
-
-  ac = ac.toCUDA();
-  bc = bc.toCUDA();
-
-  std::cout << "\nac:" << ac << std::endl;
-  std::cout << "bc:" << bc << std::endl;
-
-  ops::vec::cuda::add(ac.data(),bc.data(),outc.data(),ac.size());
-  std::cout << outc << std::endl;
-  ops::vec::cuda::sub(ac.data(),bc.data(),outc.data(),ac.size());
-  std::cout << outc << std::endl;
-  ops::vec::cuda::mul(ac.data(),bc.data(),outc.data(),ac.size());
-  std::cout << outc << std::endl;
-  ops::vec::cuda::div(ac.data(),bc.data(),outc.data(),ac.size());
-  std::cout << outc << std::endl;
+  auto time = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+  std::cout << "time: " << time << "ms\n";
+  time = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
+  std::cout << "time: " << time << "ms\n";
+  time = std::chrono::duration_cast<std::chrono::milliseconds>(t5 - t4).count();
+  std::cout << "time: " << time << "ms\n";
+  time = std::chrono::duration_cast<std::chrono::milliseconds>(t7 - t6).count();
+  std::cout << "time: " << time << "ms\n";
+  std::cout.flush();
 
   return 0;
 }

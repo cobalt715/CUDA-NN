@@ -6,7 +6,8 @@
 #include <type_traits>
 #include "Storage.cuh"
 #include "nn/Backend.hpp"
-#include "nn/Dtype.hpp"
+#include "nn/dtype.hpp"
+#include "nn/ops/gemm.cuh"
 
 namespace cobalt_715::nn::tensor{
 
@@ -136,6 +137,45 @@ public:
 
   inline bool is_overlapped() const noexcept{
     return layout_ == Layout::OVERLAPPED;
+  }
+
+  //out = alpha * ab + beta * out
+  template<nn::dtype U,nn::dtype V,nn::mutable_dtype W>
+  static void matmul_impl(const U alpha,
+                          const MatrixView<U> &a,
+                          const MatrixView<V> &b,
+                          const U beta,
+                          MatrixView<W> &out){
+
+    //U,V,Wがすべて同じ型
+    static_assert(
+      std::is_same_v<std::remove_const_t<U>,std::remove_const_t<V>>
+      &&
+      std::is_same_v<std::remove_const_t<V>,std::remove_const_t<W>>
+    );
+
+    #ifndef NDEBUG
+      if(!nn::same_backend(a,b,out)) throw std::runtime_error("tensor::MatrixView::matmul_impl backend not same");
+
+      if(a.cols() != b.rows()) throw std::invalid_argument("Matrix::matmul dimension mismatch");
+      if(out.rows() != a.rows() || out.cols() != b.cols()) throw std::invalid_argument("Matrix::matmul dimension mismatch");
+    #endif
+
+    if(a.backend() == Backend::CPU){
+      ops::cpu::gemm_impl(alpha,
+                          a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
+                          b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
+                          beta,
+                          out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
+                          out.rows(),out.cols(),a.cols());
+    }else if(a.backend() == Backend::CUDA){
+      ops::cuda::gemm_impl(alpha,
+                           a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
+                           b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
+                           beta,
+                           out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
+                           out.rows(),out.cols(),a.cols());
+    }
   }
 
   //転地を返す

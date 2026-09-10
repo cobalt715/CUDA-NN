@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include "nn/Backend.hpp"
-#include "nn/Dtype.hpp"
+#include "nn/dtype.hpp"
 #include "nn/cuda/config.cuh"
 #include "nn/cuda/util.cuh"
 

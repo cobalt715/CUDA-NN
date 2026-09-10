@@ -3,7 +3,7 @@
 #include <cassert>
 #include "vec.cuh"
 #include "op.cuh"
-#include "nn/Dtype.hpp"
+#include "nn/dtype.hpp"
 #include "nn/cuda/util.cuh"
 #include "nn/cuda/config.cuh"
 #include "nn/cuda/LaunchConfig.cuh"

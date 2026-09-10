@@ -5,7 +5,7 @@
 #include "MatrixView.hpp"
 #include "Storage.cuh"
 #include "nn/Backend.hpp"
-#include "nn/Dtype.hpp"
+#include "nn/dtype.hpp"
 #include "nn/cuda/config.cuh"
 #include "nn/cuda/util.cuh"
 
@@ -30,18 +30,6 @@ __global__ void matrix_to_string_cuda_element_copy(T *data,
 
   data[y * co + x] = arr[y * row_stride + x * col_stride];
 }
-
-#define INSTANTIATE_MATRIX_TO_STRING_CUDA_ELEMENT_COPY(T) \
-  template __global__ void \
-  matrix_to_string_cuda_element_copy( \
-  T *data, \
-  const T *arr, \
-  const int64_t ro, \
-  const int64_t co, \
-  const int64_t row_stride, \
-  const int64_t col_stride);
-
-COBALT_715_FOR_EACH_DTYPE(INSTANTIATE_MATRIX_TO_STRING_CUDA_ELEMENT_COPY)
 
 template<dtype T>
 Storage<std::remove_const_t<T>> MatrixView<T>::to_string_cuda_copy(const int64_t ro,const int64_t co) const{

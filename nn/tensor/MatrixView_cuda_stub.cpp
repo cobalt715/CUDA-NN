@@ -5,8 +5,7 @@
 #include "MatrixView.hpp"
 #include "Storage.cuh"
 #include "nn/Backend.hpp"
-#include "nn/Dtype.hpp"
-#include "nn/cuda/config.cuh"
+#include "nn/dtype.hpp"
 #include "nn/cuda/util.cuh"
 
 namespace cobalt_715::nn::tensor{

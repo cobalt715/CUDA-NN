@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <nn/Dtype.hpp>
+#include <nn/dtype.hpp>
 
 namespace cobalt_715::nn::ops::vec{
 

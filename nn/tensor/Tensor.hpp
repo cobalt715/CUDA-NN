@@ -7,6 +7,7 @@
 #include <ostream>
 #include <cassert>
 #include "nn/Backend.hpp"
+#include "nn/dtype.hpp"
 #include "nn/cuda/config.cuh"
 #include "nn/cuda/util.cuh"
 #include "Storage.cuh"

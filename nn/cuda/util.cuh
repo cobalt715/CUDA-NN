@@ -1,11 +1,9 @@
 #pragma once
 
-#ifdef COBALT_715_USE_CUDA
-#include <cuda_runtime.h>
-#endif
 #include <string>
 #include <stdexcept>
 #include <source_location>
+#include "config.cuh"
 
 namespace cobalt_715::nn::cuda{
 
