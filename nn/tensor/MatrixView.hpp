@@ -139,45 +139,6 @@ public:
     return layout_ == Layout::OVERLAPPED;
   }
 
-  //out = alpha * ab + beta * out
-  template<nn::dtype U,nn::dtype V,nn::mutable_dtype W>
-  static void matmul_impl(const U alpha,
-                          const MatrixView<U> &a,
-                          const MatrixView<V> &b,
-                          const U beta,
-                          MatrixView<W> &out){
-
-    //U,V,Wがすべて同じ型
-    static_assert(
-      std::is_same_v<std::remove_const_t<U>,std::remove_const_t<V>>
-      &&
-      std::is_same_v<std::remove_const_t<V>,std::remove_const_t<W>>
-    );
-
-    #ifndef NDEBUG
-      if(!nn::same_backend(a,b,out)) throw std::runtime_error("tensor::MatrixView::matmul_impl backend not same");
-
-      if(a.cols() != b.rows()) throw std::invalid_argument("Matrix::matmul dimension mismatch");
-      if(out.rows() != a.rows() || out.cols() != b.cols()) throw std::invalid_argument("Matrix::matmul dimension mismatch");
-    #endif
-
-    if(a.backend() == Backend::CPU){
-      ops::cpu::gemm_impl(alpha,
-                          a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
-                          b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
-                          beta,
-                          out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
-                          out.rows(),out.cols(),a.cols());
-    }else if(a.backend() == Backend::CUDA){
-      ops::cuda::gemm_impl(alpha,
-                           a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
-                           b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
-                           beta,
-                           out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
-                           out.rows(),out.cols(),a.cols());
-    }
-  }
-
   //転地を返す
   inline MatrixView<T> t() const noexcept{
     return MatrixView<T>(cols_,rows_,
@@ -261,8 +222,8 @@ private:
   Layout layout_;
 
   inline constexpr void update_layout() noexcept{
-    if(std::abs(row_stride_) >= cols_ * std::abs(col_stride_) ||
-       std::abs(col_stride_) >= rows_ * std::abs(row_stride_) ||
+    if(std::abs(row_stride_) > cols_ * std::abs(col_stride_) ||
+       std::abs(col_stride_) > rows_ * std::abs(row_stride_) ||
        row_stride_ == 0 ||
        col_stride_ == 0){
 
@@ -287,6 +248,46 @@ private:
   Storage<ValueType> to_string_cpu_copy(const int64_t ro,const int64_t co) const;
   Storage<ValueType> to_string_cuda_copy(const int64_t ro,const int64_t co) const;
 };
+
+//out = alpha * ab + beta * out
+template<nn::dtype U,nn::dtype V,nn::mutable_dtype W>
+void matmul_impl(const std::type_identity_t<U> alpha,
+                 const MatrixView<U> &a,
+                 const MatrixView<V> &b,
+                 const std::type_identity_t<U> beta,
+                 MatrixView<W> &out){
+
+  //U,V,Wがすべて同じ型
+  static_assert(
+    std::is_same_v<std::remove_const_t<U>,std::remove_const_t<V>>
+    &&
+    std::is_same_v<std::remove_const_t<V>,std::remove_const_t<W>>
+  );
+
+  #ifndef NDEBUG
+    if(!nn::same_backend(a,b,out)) throw std::runtime_error("tensor::MatrixView::matmul_impl backend not same");
+
+    if(a.cols() != b.rows() || out.rows() != a.rows() || out.cols() != b.cols()) throw std::invalid_argument("Matrix::matmul dimension mismatch");
+
+    if(out.is_overlapped()) throw std::runtime_error("tensor::MatrixView::matmul out is overlapped");
+  #endif
+
+  if(a.backend() == Backend::CPU){
+    ops::cpu::gemm_impl(alpha,
+                        a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
+                        b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
+                        beta,
+                        out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
+                        out.rows(),out.cols(),a.cols());
+  }else if(a.backend() == Backend::CUDA){
+    ops::cuda::gemm_impl(alpha,
+                         a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
+                         b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
+                         beta,
+                         out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
+                         out.rows(),out.cols(),a.cols());
+  }
+}
 
 template<dtype T>
 inline std::ostream& operator<<(std::ostream &o,const MatrixView<T> &mv){

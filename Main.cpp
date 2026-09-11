@@ -11,6 +11,32 @@
 using namespace cobalt_715::nn;
 
 int main(){
+  /*tensor::Storage<float> a(4*8,Backend::CPU);
+  tensor::Storage<float> b(8*6,Backend::CPU);
+  tensor::Storage<float> o(4*6,Backend::CPU);
+
+  for(int64_t i = 0;i < a.size();i++){
+    a.at(i) = i;
+  }
+
+  for(int64_t i = 0;i < b.size();i++){
+    b.at(i) = i * 0.1;
+  }
+
+  for(int64_t i = 0;i < o.size();i++){
+    o.at(i) = -i * 0.5;
+  }
+
+  tensor::MatrixView<float> am(4,8,a);
+  tensor::MatrixView<float> bm(8,6,b);
+  tensor::MatrixView<float> om(4,6,o);
+
+  tensor::matmul_impl(1,am,bm,0,om);
+
+  std::cout << am.to_string() << std::endl;
+  std::cout << bm.to_string() << std::endl;
+  std::cout << om.to_string() << std::endl;*/
+
   tensor::Storage<float> a(1024 * 1024,Backend::CPU);
   tensor::Storage<float> b(1024 * 1024,Backend::CPU);
   tensor::Storage<float> out(1024 * 1024,Backend::CPU);
@@ -32,11 +58,11 @@ int main(){
   tensor::MatrixView<float> omv(1024,1024,out);
 
   auto t0 = std::chrono::high_resolution_clock::now();
-  tensor::MatrixView<float>::matmul_impl<float,float,float>(1,amv,bmv,0,omv);
+  tensor::matmul_impl(1,amv,bmv,0,omv);
   auto t1 = std::chrono::high_resolution_clock::now();
 
   auto t2 = std::chrono::high_resolution_clock::now();
-  tensor::MatrixView<float>::matmul_impl<float,float,float>(1,amv,bmv,0,omv);
+  tensor::matmul_impl(1,amv,bmv,0,omv);
   auto t3 = std::chrono::high_resolution_clock::now();
 
   a = a.toCUDA();
@@ -44,12 +70,12 @@ int main(){
   out = out.toCUDA();
 
   auto t4 = std::chrono::high_resolution_clock::now();
-  tensor::MatrixView<float>::matmul_impl<float,float,float>(1,amv,bmv,0,omv);
+  tensor::matmul_impl(1,amv,bmv,0,omv);
   //cudaDeviceSynchronize();
   auto t5 = std::chrono::high_resolution_clock::now();
 
   auto t6 = std::chrono::high_resolution_clock::now();
-  tensor::MatrixView<float>::matmul_impl<float,float,float>(1,amv,bmv,0,omv);
+  tensor::matmul_impl(1,amv,bmv,0,omv);
   //cudaDeviceSynchronize();
   auto t7 = std::chrono::high_resolution_clock::now();
 
