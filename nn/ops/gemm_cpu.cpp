@@ -35,42 +35,22 @@ void kernel_reg_4_4(const T *a_pack,
                     const int64_t KB){
 
   for(int64_t i = 0;i < IB;i += 4){
-    const T *adptr0 = a_pack + i * KB;
-    const T *adptr1 = a_pack + (i + 1) * KB;
-    const T *adptr2 = a_pack + (i + 2) * KB;
-    const T *adptr3 = a_pack + (i + 3) * KB;
-
-    T *odptr0 = out_pack + i * JB;
-    T *odptr1 = out_pack + (i + 1) * JB;
-    T *odptr2 = out_pack + (i + 2) * JB;
-    T *odptr3 = out_pack + (i + 3) * JB;
-
     for(int64_t j = 0;j < JB;j += 4){
       T o00=0,o01=0,o02=0,o03=0;
       T o10=0,o11=0,o12=0,o13=0;
       T o20=0,o21=0,o22=0,o23=0;
       T o30=0,o31=0,o32=0,o33=0;
 
-      const T *btdptr0 = bt_pack + j * KB;
-      const T *btdptr1 = bt_pack + (j + 1) * KB;
-      const T *btdptr2 = bt_pack + (j + 2) * KB;
-      const T *btdptr3 = bt_pack + (j + 3) * KB;
-
-      T *optr0 = odptr0 + j;
-      T *optr1 = odptr1 + j;
-      T *optr2 = odptr2 + j;
-      T *optr3 = odptr3 + j;
-
       for(int64_t k = 0;k < KB;k++){
-        const float a0 = adptr0[k];
-        const float a1 = adptr1[k];
-        const float a2 = adptr2[k];
-        const float a3 = adptr3[k];
+        const float a0 = a_pack[i * KB + k];
+        const float a1 = a_pack[(i + 1) * KB + k];
+        const float a2 = a_pack[(i + 2) * KB + k];
+        const float a3 = a_pack[(i + 3) * KB + k];
 
-        const float bt0 = btdptr0[k];
-        const float bt1 = btdptr1[k];
-        const float bt2 = btdptr2[k];
-        const float bt3 = btdptr3[k];
+        const float bt0 = bt_pack[j * KB + k];
+        const float bt1 = bt_pack[(j + 1) * KB + k];
+        const float bt2 = bt_pack[(j + 2) * KB + k];
+        const float bt3 = bt_pack[(j + 3) * KB + k];
 
         o00 += a0 * bt0;o01 += a0 * bt1;o02 += a0 * bt2;o03 += a0 * bt3;
         o10 += a1 * bt0;o11 += a1 * bt1;o12 += a1 * bt2;o13 += a1 * bt3;
@@ -78,10 +58,10 @@ void kernel_reg_4_4(const T *a_pack,
         o30 += a3 * bt0;o31 += a3 * bt1;o32 += a3 * bt2;o33 += a3 * bt3;
       }
 
-      optr0[0] = o00; optr0[1] = o01; optr0[2] = o02; optr0[3] = o03;
-      optr1[0] = o10; optr1[1] = o11; optr1[2] = o12; optr1[3] = o13;
-      optr2[0] = o20; optr2[1] = o21; optr2[2] = o22; optr2[3] = o23;
-      optr3[0] = o30; optr3[1] = o31; optr3[2] = o32; optr3[3] = o33;
+      out_pack[i * JB + j] = o00; out_pack[i * JB + j + 1] = o01; out_pack[i * JB + j + 2] = o02; out_pack[i * JB + j + 3] = o03;
+      out_pack[(i + 1) * JB + j] = o10; out_pack[(i + 1) * JB + j + 1] = o11; out_pack[(i + 1) * JB + j + 2] = o12; out_pack[(i + 1) * JB + j + 3] = o13;
+      out_pack[(i + 2) * JB + j] = o20; out_pack[(i + 2) * JB + j + 1] = o21; out_pack[(i + 2) * JB + j + 2] = o22; out_pack[(i + 2) * JB + j + 3] = o23;
+      out_pack[(i + 3) * JB + j] = o30; out_pack[(i + 3) * JB + j + 1] = o31; out_pack[(i + 3) * JB + j + 2] = o32; out_pack[(i + 3) * JB + j + 3] = o33;
     }
   }
 }
@@ -183,8 +163,8 @@ void gemm_impl(const T alpha,
         //bは転置
         set_pack<true,T>(b_pack,b,K,J,b_row_stride,b_col_stride,kk,jj,KB,JB);
 
-        //kernel<T>(a_pack,b_pack,out_pack,IB,JB,KB);
-        kernel_reg_4_4<T>(a_pack,b_pack,out_pack,IB,JB,KB);
+        kernel<T>(a_pack,b_pack,out_pack,IB,JB,KB);
+        //kernel_reg_4_4<T>(a_pack,b_pack,out_pack,IB,JB,KB);
       }
       write_out<T>(out,out_pack,alpha,beta,I,J,out_row_stride,out_col_stride,ii,jj,IB,JB);
     }

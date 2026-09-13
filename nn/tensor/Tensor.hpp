@@ -25,22 +25,30 @@ public:
       stride_(0),
       device_stride_(0){
 
-    data_ = Storage(calculate_data_size(shape_),backend);
+    data_ = Storage<T>(calculate_data_size(shape_),backend);
 
     set_stride();
   }
 
   Tensor(const Storage<int64_t> &shape,const Storage<T> &data,Backend backend=Backend::CPU)
-    : data_(data.clone()),
+    : data_(data.to(backend)),
       shape_(shape.toCPU()),
       device_shape_(shape.to(backend)),
       stride_(0),
       device_stride_(0){
 
-    if(data.size() != calculate_data_size(shape_))
+    if(data_.size() != calculate_data_size(shape_))
       throw std::runtime_error("tensor::Tensor");
 
     set_stride();
+  }
+
+  inline T* data(){
+    return data_.data();
+  }
+
+  inline const T* data() const{
+    return data_.data();
   }
 
   inline const Storage<int64_t>& shape() const{
@@ -266,7 +274,20 @@ private:
 
 template<dtype T>
 inline std::ostream& operator<<(std::ostream &o,const Tensor<T> &t){
-  return o << t.to_string();
+  Storage<int64_t> limit = t.shape().toCPU();
+  for(int64_t i = 0;i < limit.size();i++){
+    if(i + 1 == limit.size()){
+      limit.at(i) = 6;
+    }else if(i + 2 == limit.size()){
+      limit.at(i) = 2;
+    }else if(i + 3 == limit.size()){
+      limit.at(i) = 2;
+    }else{
+      limit.at(i) = 1;
+    }
+  }
+
+  return o << t.to_string(limit);
 }
 
 }//namespace cobalt_715::nn::tensor

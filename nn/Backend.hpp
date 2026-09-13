@@ -12,11 +12,17 @@ enum class Backend{
 };
 
 //この関数を持っているか
-template<typename T>
+template<class T>
 concept BackendObject =
 requires(const T &x){
   { x.backend() } -> std::same_as<Backend>;
 };
+
+//Backendがすべて同じか調べる
+template<BackendObject T,BackendObject... Ts>
+inline bool same_backend(const T& first,const Ts&... rest){
+  return ((rest.backend() == first.backend()) && ...);
+}
 
 //文字列にする
 constexpr const std::string to_string(Backend backend) noexcept{
@@ -32,12 +38,6 @@ constexpr const std::string to_string(Backend backend) noexcept{
 
 inline std::ostream& operator<<(std::ostream &o,Backend backend){
   return o << to_string(backend);
-}
-
-//Backendがすべて同じか調べる
-template<BackendObject T,BackendObject... Ts>
-inline bool same_backend(const T& first,const Ts&... rest){
-  return ((rest.backend() == first.backend()) && ...);
 }
 
 }//namespace cobalt_715::nn
