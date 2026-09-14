@@ -9,6 +9,7 @@
 #include "nn/Backend.hpp"
 #include "nn/dtype.hpp"
 #include "nn/ops/vec.cuh"
+#include "nn/ops/matrix.cuh"
 #include "nn/ops/gemm.cuh"
 
 namespace cobalt_715::nn::tensor{
@@ -81,6 +82,28 @@ void div(const Tensor<T> &a,const Tensor<T> &b,Tensor<T> &out){
     nn::ops::vec::cpu::div(a.data(),b.data(),out.data(),a.numel());
   }else if(a.backend() == Backend::CUDA){
     nn::ops::vec::cuda::div(a.data(),b.data(),out.data(),a.numel());
+  }
+}
+
+template<nn::dtype U,nn::dtype V,nn::mutable_dtype W>
+void add(const MatrixView<U> &a,const MatrixView<V> &b,MatrixView<W> &out){
+  //U,V,Wがすべて同じ型
+  static_assert(
+    std::is_same_v<std::remove_const_t<U>,std::remove_const_t<V>>
+    &&
+    std::is_same_v<std::remove_const_t<V>,std::remove_const_t<W>>
+  );
+
+  if(a.backend() == Backend::CPU){
+    nn::ops::matrix::cpu::add(a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
+                              b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
+                              out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
+                              a.rows(),a.cols());
+  }else if(a.backend() == Backend::CUDA){
+    nn::ops::matrix::cuda::add(a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
+                               b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
+                               out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
+                               a.rows(),a.cols());
   }
 }
 

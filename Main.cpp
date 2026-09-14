@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <chrono>
 #include "nn/Backend.hpp"
@@ -6,8 +7,6 @@
 #include "nn/tensor/Tensor.hpp"
 #include "nn/tensor/MatrixView.hpp"
 #include "nn/tensor/ops.hpp"
-#include "nn/ops/vec.cuh"
-#include "nn/ops/gemm.cuh"
 
 using namespace cobalt_715::nn;
 
@@ -26,21 +25,17 @@ int main(){
     cs.at(i) = -i;
   }
 
-  tensor::Tensor<float> at({2,4,8},as,Backend::CUDA);
-  tensor::Tensor<float> bt({2,4,8},bs,Backend::CUDA);
-  tensor::Tensor<float> ct({2,4,8},cs,Backend::CUDA);
+  tensor::MatrixView<float> a(4,8,16,2,as);
+  tensor::MatrixView<float> b(4,8,16,2,bs);
+  tensor::MatrixView<float> c(4,8,16,2,cs);
 
-  std::cout << at.to_string() << std::endl;
-  std::cout << bt.to_string() << std::endl;
-  std::cout << ct.to_string() << std::endl;
+  tensor::add(a,b,c);
 
-  tensor::add(at,bt,ct);
+  std::cout << a.to_string() << std::endl;
+  std::cout << b.to_string() << std::endl;
+  std::cout << c.to_string() << std::endl;
 
-  std::cout << at.to_string() << std::endl;
-  std::cout << bt.to_string() << std::endl;
-  std::cout << ct.to_string() << std::endl;
-
-  std::cout << cs << std::endl;
+  std::cout << cs.to_string() << std::endl;
 
   return 0;
 }
