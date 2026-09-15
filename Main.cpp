@@ -29,9 +29,9 @@ int main(){
   bs = bs.toCUDA();
   cs = cs.toCUDA();
 
-  tensor::MatrixView<float> a(2,8,16,2,as);
-  tensor::MatrixView<float> b(4,8,16,2,bs);
-  tensor::MatrixView<float> c(4,8,16,2,cs);
+  tensor::MatrixView<float> a(4,8,16,2,as.data_ptr(0));
+  tensor::MatrixView<float> b(4,8,16,2,bs.data_ptr(0));
+  tensor::MatrixView<float> c(4,8,16,2,cs.data_ptr(0));
 
   tensor::add(a,b,c);
 

@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include "nn/Backend.hpp"
+#include "nn/DataPtr.hpp"
 #include "nn/dtype.hpp"
 #include "nn/cuda/config.cuh"
 #include "nn/cuda/util.cuh"
@@ -112,6 +113,22 @@ public:
 
   inline const T* data() const noexcept{
     return data_;
+  }
+
+  inline DataPtr<T> data_ptr(const int64_t i){
+    #ifndef NDEBUG
+    if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::data_ptr");
+    #endif
+
+    return DataPtr<T>(data_ + i,backend_);
+  }
+
+  inline DataPtr<const T> data_ptr(const int64_t i) const{
+    #ifndef NDEBUG
+    if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::data_ptr");
+    #endif
+
+    return DataPtr<const T>(data_ + i,backend_);
   }
 
   inline T* begin() noexcept{

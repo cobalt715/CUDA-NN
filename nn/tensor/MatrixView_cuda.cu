@@ -38,7 +38,7 @@ Storage<std::remove_const_t<T>> MatrixView<T>::to_string_cuda_copy(const int64_t
   const dim3 grid((co + 15) / 16,(ro + 15) / 16);
   const dim3 block(16,16);
 
-  matrix_to_string_cuda_element_copy<std::remove_const_t<T>><<<grid,block>>>(arr.data(),data_.data() + offset_,ro,co,row_stride_,col_stride_);
+  matrix_to_string_cuda_element_copy<std::remove_const_t<T>><<<grid,block>>>(arr.data(),data_.data(),ro,co,row_stride_,col_stride_);
   nn::cuda::check(cudaGetLastError());
   nn::cuda::check(cudaDeviceSynchronize());
 

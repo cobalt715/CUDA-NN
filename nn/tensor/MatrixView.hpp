@@ -6,6 +6,7 @@
 #include <type_traits>
 #include "Storage.cuh"
 #include "nn/Backend.hpp"
+#include "nn/DataPtr.hpp"
 #include "nn/dtype.hpp"
 #include "nn/ops/gemm.cuh"
 
@@ -14,16 +15,6 @@ namespace cobalt_715::nn::tensor{
 //T[]などから一部を行列として借用する
 template<nn::dtype T=float>
 struct MatrixView{
-private:
-  using ValueType = std::remove_const_t<T>;
-
-  using StorageType =
-    std::conditional_t<
-      std::is_const_v<T>,
-      const Storage<ValueType>,
-      Storage<ValueType>
-    >;
-
 public:
   enum class Layout{
     ROW_MAJOR_CONTIGUOUS,//row_stride == cols_ && col_stride_ == 1
@@ -36,49 +27,41 @@ public:
 
   constexpr MatrixView(const int64_t rows,
                        const int64_t cols,
-                       StorageType &data,
-                       const int64_t offset = 0
-                       ) : MatrixView(rows,cols,cols,1,data,offset){}
+                       const DataPtr<T> data
+                       ) : MatrixView(rows,cols,cols,1,data){}
 
   constexpr MatrixView(const int64_t rows,
                        const int64_t cols,
                        const int64_t row_stride,
                        const int64_t col_stride,
-                       StorageType &data,
-                       const int64_t offset = 0
+                       const DataPtr<T> data
                        ) : rows_(rows),
                            cols_(cols),
                            row_stride_(row_stride),
                            col_stride_(col_stride),
-                           data_(data),
-                           offset_(offset){
-
+                           data_(data){
     //負は許さない
-    if(rows_ < 0 || cols_ < 0 || offset_ < 0){
+    if(rows_ < 0 || cols_ < 0){
       throw std::invalid_argument("tensor::Storage::constructor negative size");
     }
 
     update_layout();
   }
 
-  inline StorageType& data() noexcept{
-    return data_;
+  inline T* data() noexcept{
+    return data_.data();
   }
 
-  inline StorageType& data() const noexcept{
-    return data_;
-  }
-
-  inline int64_t offset() const noexcept{
-    return offset_;
+  inline const T* data() const noexcept{
+    return data_.data();
   }
 
   inline T& at(const int64_t row,const int64_t col){
-    return data_.at(offset_ + row * row_stride_ + col * col_stride_);
+    return data_.data()[row * row_stride_ + col * col_stride_];
   }
 
   inline const T& at(const int64_t row,const int64_t col) const{
-    return data_.at(offset_ + row * row_stride_ + col * col_stride_);
+    return data_.data()[row * row_stride_ + col * col_stride_];
   }
 
   inline int64_t rows() const noexcept{
@@ -143,8 +126,7 @@ public:
   inline MatrixView<T> t() const noexcept{
     return MatrixView<T>(cols_,rows_,
                          col_stride_,row_stride_,
-                         data_,
-                         offset_);
+                         data_);
   }
 
   std::string to_string() const{
@@ -160,8 +142,6 @@ public:
                        + std::to_string(row_stride_)
                        + ", col_stride_="
                        + std::to_string(col_stride_)
-                       + ", offset_="
-                       + std::to_string(offset_)
                        + ", backend_="
                        + nn::to_string(data_.backend())
                        + ", dtype="
@@ -172,7 +152,7 @@ public:
 
     const int64_t co = std::clamp<int64_t>(col,0,cols_);
 
-    Storage<ValueType> data(0);
+    Storage<std::remove_cv_t<T>> data(0);
 
     if(data_.backend() == Backend::CPU){
       data = to_string_cpu_copy(ro,co);
@@ -212,9 +192,8 @@ public:
   }
 
 private:
-  //data_.data()[offset_ + row * row_stride_ + col * col_stride_]でアクセスする
-  StorageType &data_;//constなし
-  int64_t offset_;
+  //data_.data()[row * row_stride_ + col * col_stride_]でアクセスする
+  DataPtr<T> data_;
   int64_t rows_;//行
   int64_t cols_;//列
   int64_t row_stride_;
@@ -245,8 +224,8 @@ private:
     }
   }
 
-  Storage<ValueType> to_string_cpu_copy(const int64_t ro,const int64_t co) const;
-  Storage<ValueType> to_string_cuda_copy(const int64_t ro,const int64_t co) const;
+  Storage<std::remove_const_t<T>> to_string_cpu_copy(const int64_t ro,const int64_t co) const;
+  Storage<std::remove_const_t<T>> to_string_cuda_copy(const int64_t ro,const int64_t co) const;
 };
 
 template<dtype T>

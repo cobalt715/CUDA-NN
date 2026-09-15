@@ -110,14 +110,14 @@ void add(const MatrixView<U> &a,const MatrixView<V> &b,MatrixView<W> &out){
   if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::add shape mismatch");
 
   if(a.backend() == Backend::CPU){
-    nn::ops::matrix::cpu::add(a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
-                              b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
-                              out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
+    nn::ops::matrix::cpu::add(a.data(),a.row_stride(),a.col_stride(),
+                              b.data(),b.row_stride(),b.col_stride(),
+                              out.data(),out.row_stride(),out.col_stride(),
                               a.rows(),a.cols());
   }else if(a.backend() == Backend::CUDA){
-    nn::ops::matrix::cuda::add(a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
-                               b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
-                               out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
+    nn::ops::matrix::cuda::add(a.data(),a.row_stride(),a.col_stride(),
+                               b.data(),b.row_stride(),b.col_stride(),
+                               out.data(),out.row_stride(),out.col_stride(),
                                a.rows(),a.cols());
   }
 }
@@ -147,17 +147,17 @@ void matmul_impl(const std::type_identity_t<U> alpha,
 
   if(a.backend() == Backend::CPU){
     ops::cpu::gemm_impl(alpha,
-                        a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
-                        b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
+                        a.data(),a.row_stride(),a.col_stride(),
+                        b.data(),b.row_stride(),b.col_stride(),
                         beta,
-                        out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
+                        out.data(),out.row_stride(),out.col_stride(),
                         out.rows(),out.cols(),a.cols());
   }else if(a.backend() == Backend::CUDA){
     ops::cuda::gemm_impl(alpha,
-                         a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
-                         b.data().data() + b.offset(),b.row_stride(),b.col_stride(),
+                         a.data(),a.row_stride(),a.col_stride(),
+                         b.data(),b.row_stride(),b.col_stride(),
                          beta,
-                         out.data().data() + out.offset(),out.row_stride(),out.col_stride(),
+                         out.data(),out.row_stride(),out.col_stride(),
                          out.rows(),out.cols(),a.cols());
   }
 }
