@@ -25,7 +25,11 @@ int main(){
     cs.at(i) = -i;
   }
 
-  tensor::MatrixView<float> a(4,8,16,2,as);
+  as = as.toCUDA();
+  bs = bs.toCUDA();
+  cs = cs.toCUDA();
+
+  tensor::MatrixView<float> a(2,8,16,2,as);
   tensor::MatrixView<float> b(4,8,16,2,bs);
   tensor::MatrixView<float> c(4,8,16,2,cs);
 

@@ -37,10 +37,22 @@ bool same_shape(const T& first,const Ts&... rest){
   return ((same(rest.shape(),first.shape())) && ...);
 }
 
+template<class T>
+concept HasRowsCols =
+requires(const T &x){
+  { x.rows() } -> std::same_as<int64_t>;
+  { x.cols() } -> std::same_as<int64_t>;
+};
+
+template<HasRowsCols T,HasRowsCols... Ts>
+bool same_shape(const T& first,const Ts&... rest){
+  return ((rest.rows() == first.rows() && rest.cols() == first.cols()) && ...);
+}
+
 template<nn::mutable_dtype T>
 void add(const Tensor<T> &a,const Tensor<T> &b,Tensor<T> &out){
   if(!nn::same_backend(a,b,out)) throw std::invalid_argument("tensor::ops::add backend mismatch");
-  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::add dimension mismatch");
+  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::add shape mismatch");
 
   if(a.backend() == Backend::CPU){
     nn::ops::vec::cpu::add(a.data(),b.data(),out.data(),a.numel());
@@ -52,7 +64,7 @@ void add(const Tensor<T> &a,const Tensor<T> &b,Tensor<T> &out){
 template<nn::mutable_dtype T>
 void sub(const Tensor<T> &a,const Tensor<T> &b,Tensor<T> &out){
   if(!nn::same_backend(a,b,out)) throw std::invalid_argument("tensor::ops::sub backend mismatch");
-  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::sub dimension mismatch");
+  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::sub shape mismatch");
 
   if(a.backend() == Backend::CPU){
     nn::ops::vec::cpu::sub(a.data(),b.data(),out.data(),a.numel());
@@ -64,7 +76,7 @@ void sub(const Tensor<T> &a,const Tensor<T> &b,Tensor<T> &out){
 template<nn::mutable_dtype T>
 void mul(const Tensor<T> &a,const Tensor<T> &b,Tensor<T> &out){
   if(!nn::same_backend(a,b,out)) throw std::invalid_argument("tensor::ops::mul backend mismatch");
-  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::mul dimension mismatch");
+  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::mul shape mismatch");
 
   if(a.backend() == Backend::CPU){
     nn::ops::vec::cpu::mul(a.data(),b.data(),out.data(),a.numel());
@@ -76,7 +88,7 @@ void mul(const Tensor<T> &a,const Tensor<T> &b,Tensor<T> &out){
 template<nn::mutable_dtype T>
 void div(const Tensor<T> &a,const Tensor<T> &b,Tensor<T> &out){
   if(!nn::same_backend(a,b,out)) throw std::invalid_argument("tensor::ops::div backend mismatch");
-  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::div dimension mismatch");
+  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::div shape mismatch");
 
   if(a.backend() == Backend::CPU){
     nn::ops::vec::cpu::div(a.data(),b.data(),out.data(),a.numel());
@@ -93,6 +105,9 @@ void add(const MatrixView<U> &a,const MatrixView<V> &b,MatrixView<W> &out){
     &&
     std::is_same_v<std::remove_const_t<V>,std::remove_const_t<W>>
   );
+
+  if(!nn::same_backend(a,b,out)) throw std::invalid_argument("tensor::ops::add backend mismatch");
+  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::add shape mismatch");
 
   if(a.backend() == Backend::CPU){
     nn::ops::matrix::cpu::add(a.data().data() + a.offset(),a.row_stride(),a.col_stride(),
