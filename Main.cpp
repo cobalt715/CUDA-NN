@@ -7,39 +7,43 @@
 #include "nn/tensor/Tensor.hpp"
 #include "nn/tensor/MatrixView.hpp"
 #include "nn/tensor/ops.hpp"
+#include "nn/layer/ILayer.hpp"
+#include "nn/layer/Dense.hpp"
 
 using namespace cobalt_715::nn;
 
 int main(){
-  tensor::Storage<float> as(64,Backend::CPU);
-  tensor::Storage<float> bs(64,Backend::CPU);
-  tensor::Storage<float> cs(64,Backend::CPU);
+  std::mt19937 gen(0);
 
-  for(int64_t i = 0;i < as.size();i++){
-    as.at(i) = i;
+  tensor::Tensor<double> input({4,2},{0,0,0,1000,1000,0,1000,1000},Backend::CPU);
+  tensor::Tensor<double> output({4,1},{0,1000,1000,0},Backend::CPU);
+  tensor::Tensor<double> some({4,1},Backend::CPU);
+
+
+  std::cout << input.to_string() << std::endl;
+  std::cout << output.to_string() << std::endl;
+
+  layer::Dense<double> d0(2,3);
+  layer::Dense<double> d1(3,1);
+
+  d0.random_init(gen);
+  d1.random_init(gen);
+
+  for(int64_t i = 0;i < 100000;i++){
+    const tensor::Tensor<double> &out = d1.forward(d0.forward(input));
+
+    std::cout << out.to_string() << std::endl;
+
+    tensor::sub(out,output,some);
+
+    d0.backward(d1.backward(some));
+
+    d0.step(0.000001,1);
+    d1.step(0.000001,1);
+
+    d0.zero_grad();
+    d1.zero_grad();
   }
-  for(int64_t i = 0;i < bs.size();i++){
-    bs.at(i) = i * 0.1f;
-  }
-  for(int64_t i = 0;i < cs.size();i++){
-    cs.at(i) = -i;
-  }
-
-  as = as.toCUDA();
-  bs = bs.toCUDA();
-  cs = cs.toCUDA();
-
-  tensor::MatrixView<float> a(4,8,16,2,as.data_ptr(0));
-  tensor::MatrixView<float> b(4,8,16,2,bs.data_ptr(0));
-  tensor::MatrixView<float> c(4,8,16,2,cs.data_ptr(0));
-
-  tensor::add(a,b,c);
-
-  std::cout << a.to_string() << std::endl;
-  std::cout << b.to_string() << std::endl;
-  std::cout << c.to_string() << std::endl;
-
-  std::cout << cs.to_string() << std::endl;
 
   return 0;
 }

@@ -16,6 +16,7 @@
 
 namespace cobalt_715::nn::tensor{
 
+//CPU,CUDA対応のシンプルな配列
 template<nn::mutable_dtype T=float>
 struct Storage{
 private:
@@ -115,22 +116,6 @@ public:
     return data_;
   }
 
-  inline DataPtr<T> data_ptr(const int64_t i){
-    #ifndef NDEBUG
-    if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::data_ptr");
-    #endif
-
-    return DataPtr<T>(data_ + i,backend_);
-  }
-
-  inline DataPtr<const T> data_ptr(const int64_t i) const{
-    #ifndef NDEBUG
-    if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::data_ptr");
-    #endif
-
-    return DataPtr<const T>(data_ + i,backend_);
-  }
-
   inline T* begin() noexcept{
     return data_;
   }
@@ -161,6 +146,22 @@ public:
     #endif
 
     return data_[i];
+  }
+
+  inline DataPtr<T> data_ptr(const int64_t i){
+    #ifndef NDEBUG
+    if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::data_ptr");
+    #endif
+
+    return DataPtr<T>(data_ + i,backend_);
+  }
+
+  inline DataPtr<const T> data_ptr(const int64_t i) const{
+    #ifndef NDEBUG
+    if(i < 0 || size_ <= i) throw std::out_of_range("tensor::Storage::data_ptr");
+    #endif
+
+    return DataPtr<const T>(data_ + i,backend_);
   }
 
   inline int64_t size() const noexcept{

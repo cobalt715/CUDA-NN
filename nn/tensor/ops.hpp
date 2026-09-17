@@ -122,6 +122,81 @@ void add(const MatrixView<U> &a,const MatrixView<V> &b,MatrixView<W> &out){
   }
 }
 
+template<nn::dtype U,nn::dtype V,nn::mutable_dtype W>
+void sub(const MatrixView<U> &a,const MatrixView<V> &b,MatrixView<W> &out){
+  //U,V,Wがすべて同じ型
+  static_assert(
+    std::is_same_v<std::remove_const_t<U>,std::remove_const_t<V>>
+    &&
+    std::is_same_v<std::remove_const_t<V>,std::remove_const_t<W>>
+  );
+
+  if(!nn::same_backend(a,b,out)) throw std::invalid_argument("tensor::ops::sub backend mismatch");
+  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::sub shape mismatch");
+
+  if(a.backend() == Backend::CPU){
+    nn::ops::matrix::cpu::sub(a.data(),a.row_stride(),a.col_stride(),
+                              b.data(),b.row_stride(),b.col_stride(),
+                              out.data(),out.row_stride(),out.col_stride(),
+                              a.rows(),a.cols());
+  }else if(a.backend() == Backend::CUDA){
+    nn::ops::matrix::cuda::sub(a.data(),a.row_stride(),a.col_stride(),
+                               b.data(),b.row_stride(),b.col_stride(),
+                               out.data(),out.row_stride(),out.col_stride(),
+                               a.rows(),a.cols());
+  }
+}
+
+template<nn::dtype U,nn::dtype V,nn::mutable_dtype W>
+void mul(const MatrixView<U> &a,const MatrixView<V> &b,MatrixView<W> &out){
+  //U,V,Wがすべて同じ型
+  static_assert(
+    std::is_same_v<std::remove_const_t<U>,std::remove_const_t<V>>
+    &&
+    std::is_same_v<std::remove_const_t<V>,std::remove_const_t<W>>
+  );
+
+  if(!nn::same_backend(a,b,out)) throw std::invalid_argument("tensor::ops::mul backend mismatch");
+  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::mul shape mismatch");
+
+  if(a.backend() == Backend::CPU){
+    nn::ops::matrix::cpu::mul(a.data(),a.row_stride(),a.col_stride(),
+                              b.data(),b.row_stride(),b.col_stride(),
+                              out.data(),out.row_stride(),out.col_stride(),
+                              a.rows(),a.cols());
+  }else if(a.backend() == Backend::CUDA){
+    nn::ops::matrix::cuda::mul(a.data(),a.row_stride(),a.col_stride(),
+                               b.data(),b.row_stride(),b.col_stride(),
+                               out.data(),out.row_stride(),out.col_stride(),
+                               a.rows(),a.cols());
+  }
+}
+
+template<nn::dtype U,nn::dtype V,nn::mutable_dtype W>
+void div(const MatrixView<U> &a,const MatrixView<V> &b,MatrixView<W> &out){
+  //U,V,Wがすべて同じ型
+  static_assert(
+    std::is_same_v<std::remove_const_t<U>,std::remove_const_t<V>>
+    &&
+    std::is_same_v<std::remove_const_t<V>,std::remove_const_t<W>>
+  );
+
+  if(!nn::same_backend(a,b,out)) throw std::invalid_argument("tensor::ops::div backend mismatch");
+  if(!same_shape(a,b,out)) throw std::invalid_argument("tensor::ops::div shape mismatch");
+
+  if(a.backend() == Backend::CPU){
+    nn::ops::matrix::cpu::div(a.data(),a.row_stride(),a.col_stride(),
+                              b.data(),b.row_stride(),b.col_stride(),
+                              out.data(),out.row_stride(),out.col_stride(),
+                              a.rows(),a.cols());
+  }else if(a.backend() == Backend::CUDA){
+    nn::ops::matrix::cuda::div(a.data(),a.row_stride(),a.col_stride(),
+                               b.data(),b.row_stride(),b.col_stride(),
+                               out.data(),out.row_stride(),out.col_stride(),
+                               a.rows(),a.cols());
+  }
+}
+
 //out = alpha * ab + beta * out
 template<nn::dtype U,nn::dtype V,nn::mutable_dtype W>
 void matmul_impl(const std::type_identity_t<U> alpha,

@@ -11,6 +11,7 @@
 #include "nn/cuda/config.cuh"
 #include "nn/cuda/util.cuh"
 #include "Storage.cuh"
+#include "MatrixView.hpp"
 
 namespace cobalt_715::nn::tensor{
 
@@ -25,7 +26,7 @@ public:
       stride_(0),
       device_stride_(0){
 
-    data_ = Storage<T>(calculate_data_size(shape_),backend);
+    data_ = Storage<T>(calc_data_size(shape_),backend);
 
     set_stride();
   }
@@ -37,10 +38,26 @@ public:
       stride_(0),
       device_stride_(0){
 
-    if(data_.size() != calculate_data_size(shape_))
+    if(data_.size() != calc_data_size(shape_))
       throw std::runtime_error("tensor::Tensor");
 
     set_stride();
+  }
+
+  inline MatrixView<T> flatten_matrix_view(){
+    if(rank() == 0){
+      return MatrixView<T>(0,0,data_.data_ptr(0));
+    }
+
+    return MatrixView<T>(numel() / dim(rank() - 1),dim(rank() - 1),data_.data_ptr(0));
+  }
+
+  inline MatrixView<const T> flatten_matrix_view() const{
+    if(rank() == 0){
+      return MatrixView<const T>(0,0,data_.data_ptr(0));
+    }
+
+    return MatrixView<const T>(numel() / dim(rank() - 1),dim(rank() - 1),data_.data_ptr(0));
   }
 
   inline T* data(){
@@ -68,25 +85,19 @@ public:
   }
 
   inline T& at(const Storage<int64_t> &index){
-    check_index(index);
-
-    int64_t offset = 0;
-    for(int64_t i = 0;i < shape_.size();i++){
-      offset += index.at(i) * stride_.at(i);
-    }
-
-    return data_.at(offset);
+    return data_.at(calc_offset(index));
   }
 
   inline const T& at(const Storage<int64_t> &index) const{
-    check_index(index);
+    return data_.at(calc_offset(index));
+  }
 
-    int64_t offset = 0;
-    for(int64_t i = 0;i < shape_.size();i++){
-      offset += index.at(i) * stride_.at(i);
-    }
+  inline DataPtr<T> data_ptr(const Storage<int64_t> &index){
+    return data_.data_ptr(calc_offset(index));
+  }
 
-    return data_.at(offset);
+  inline DataPtr<const T> data_ptr(const Storage<int64_t> &index) const{
+    return data_.data_ptr(calc_offset(index));
   }
 
   inline int64_t rank() const{
@@ -153,6 +164,22 @@ public:
 
     if(copy_len == 0){
       text += "{\n          ...\n        }";
+    }else if(rank() == 1){
+      text += "{";
+      for(int64_t i = 0;i < copy_len;i++){
+        if(i != 0) text += ", ";
+        text += std::to_string(data_.at(i));
+      }
+
+      if(copy_len < numel()){
+        if(copy_len == 0){
+          text += "...";
+        }else{
+          text += ", ...";
+        }
+      }
+
+      text += "}";
     }else{
       Storage<T> data(0);
 
@@ -236,7 +263,7 @@ private:
   }
 
   //data_のsizeを計算する
-  inline static int64_t calculate_data_size(const Storage<int64_t>& shape){
+  inline static int64_t calc_data_size(const Storage<int64_t>& shape){
     int64_t data_size = 1;
     for(int64_t i = 0;i < shape.size();i++){
       data_size *= shape.at(i);
@@ -259,16 +286,33 @@ private:
 
   //indexが正しいか確認する
   inline void check_index(const Storage<int64_t>& index) const{
-    //#ifndef NDEBUG
+    #ifndef NDEBUG
     if(shape_.size() != index.size())
       throw std::runtime_error("tensor::Tensor check_index dimension mismatch");
+
+    if(index.backend() != Backend::CPU)
+      throw std::runtime_error("tensor::Tensor check_index Backend is not CPU");
 
     for(int64_t i = 0;i < index.size();i++){
       const int64_t value = index.at(i);
       if(value < 0 || shape_.at(i) <= value)
         throw std::runtime_error("Tensor index out of bounds at dim");
     }
-    //#endif
+    #endif
+  }
+
+  //indexから実際にどこにアクセスするか計算する
+  inline int64_t calc_offset(const Storage<int64_t> &index) const{
+    #ifndef NDEBUG
+    check_index(index);
+    #endif
+
+    int64_t offset = 0;
+    for(int64_t i = 0;i < shape_.size();i++){
+      offset += index.at(i) * stride_.at(i);
+    }
+
+    return offset;
   }
 };
 
